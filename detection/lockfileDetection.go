@@ -1,0 +1,169 @@
+package detection
+
+import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+
+	"github.com/samtv12345/gnpm/packageJson"
+	"go.uber.org/zap"
+)
+
+func pathExists(path string) bool {
+	result, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return result.IsDir()
+}
+
+func Lookup(cwd string) <-chan string {
+	ch := make(chan string)
+	go func() {
+		directory := filepath.Clean(cwd)
+		root := filepath.VolumeName(directory) + string(filepath.Separator)
+		for directory != "" && directory != root {
+			ch <- directory
+			directory = filepath.Dir(directory)
+		}
+		close(ch)
+	}()
+	return ch
+}
+
+type PackageManagerDetectionResult struct {
+	Name    string
+	Agent   *string
+	Version *string
+}
+
+func handleVer(version *string) *string {
+	if version == nil {
+		return nil
+	}
+	re := regexp.MustCompile(`\d+(\.\d+){0,2}`)
+	match := re.FindString(*version)
+	if match != "" {
+		return &match
+	}
+	return version
+}
+
+func getNameAndVer(pm packageJson.PackageManifest) *PackageManagerDetectionResult {
+	pmString, ok := (*pm.PackageManager).(string)
+	if pm.PackageManager != nil && ok {
+		var depRangeMarker = regexp.MustCompile("^\\^")
+		replacedPackageManager := depRangeMarker.ReplaceAll([]byte(pmString), []byte(""))
+		var resultingNameAndVersion = strings.Split(string(replacedPackageManager), "@")
+
+		return &PackageManagerDetectionResult{
+			Name:    resultingNameAndVersion[0],
+			Version: handleVer(&resultingNameAndVersion[1]),
+			Agent:   nil,
+		}
+	}
+	if pm.DevEngines != nil && pm.DevEngines.PackageManager != nil && pm.DevEngines.PackageManager.Name != "" {
+		return &PackageManagerDetectionResult{
+			Name:    pm.DevEngines.PackageManager.Name,
+			Version: handleVer(&pm.DevEngines.PackageManager.Version),
+			Agent:   nil,
+		}
+	}
+
+	return nil
+}
+
+func HandlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageManagerDetectionResult {
+	pm, err := packageJson.ReadPackageJson(filePath)
+	var agent string
+	if err != nil {
+		return nil
+	}
+	result := getNameAndVer(*pm)
+
+	if result != nil {
+		var name = result.Name
+		var version = result.Version
+		var res = FromStringToAgentName(result.Name)
+
+		if res == AgentNameYarn {
+			if parsedVersion, err := strconv.Atoi(*result.Version); err == nil && parsedVersion >= 2 {
+				var versionBerry = "berry"
+				var agentBerry = AgentYarnBerry
+				return &PackageManagerDetectionResult{
+					Name:    result.Name,
+					Version: &versionBerry,
+					Agent:   &agentBerry,
+				}
+			} else if name == "pnpm" {
+				if parsedVersion, err := strconv.Atoi(*result.Version); err == nil && parsedVersion < 7 {
+					agent = "pnpm@6"
+					return &PackageManagerDetectionResult{
+						Name:    name,
+						Version: version,
+						Agent:   &agent,
+					}
+				} else {
+					agent = AgentPnpm
+				}
+			} else if slices.Contains(Agents, name) {
+				agent = name
+				return &PackageManagerDetectionResult{
+					Name:    name,
+					Version: version,
+					Agent:   &agent,
+				}
+			} else {
+				logger.Warn("[gnpm] Unknown packageManager:" + name)
+			}
+		}
+	}
+
+	return nil
+}
+
+func DetectLockFileTool(path string, logger *zap.SugaredLogger) PackageManagerDetectionResult {
+	var strategies = []string{
+		"lockfile",
+		"packageManager-field",
+		"devEngines-field",
+	}
+
+	for dir := range Lookup(path) {
+		for _, strategy := range strategies {
+			switch strategy {
+			case "lockfile":
+				for lock, name := range LOCKS {
+					if pathExists(filepath.Join(dir, lock)) {
+						if pathExists(filepath.Join(dir, "package.json")) {
+							logger.Infof("[gnpm] Detected package manager: %s (via %s)", name, lock)
+							var result = HandlePackageManager(dir, logger)
+							if result != nil {
+								return *result
+							} else {
+								return PackageManagerDetectionResult{
+									Name:    name,
+									Version: nil,
+									Agent:   &name,
+								}
+							}
+						}
+					}
+				}
+				break
+			case "packageManager-field", "devEngines-field":
+				if pathExists(filepath.Join(dir, "package.json")) {
+					var result = HandlePackageManager(dir, logger)
+					if result != nil {
+						return *result
+					}
+				}
+				break
+			}
+		}
+	}
+
+}
