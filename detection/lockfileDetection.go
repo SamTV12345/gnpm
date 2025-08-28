@@ -12,12 +12,17 @@ import (
 	"go.uber.org/zap"
 )
 
-func pathExists(path string) bool {
+func pathExists(path string, isDirectory bool) bool {
 	result, err := os.Stat(path)
 	if err != nil {
 		return false
 	}
-	return result.IsDir()
+
+	if isDirectory {
+		return result.IsDir()
+	}
+
+	return !result.IsDir()
 }
 
 func Lookup(cwd string) <-chan string {
@@ -125,7 +130,7 @@ func HandlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageMa
 	return nil
 }
 
-func DetectLockFileTool(path string, logger *zap.SugaredLogger) PackageManagerDetectionResult {
+func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerDetectionResult {
 	var strategies = []string{
 		"lockfile",
 		"packageManager-field",
@@ -137,14 +142,14 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) PackageManagerDe
 			switch strategy {
 			case "lockfile":
 				for lock, name := range LOCKS {
-					if pathExists(filepath.Join(dir, lock)) {
-						if pathExists(filepath.Join(dir, "package.json")) {
+					if pathExists(filepath.Join(dir, lock), false) {
+						if pathExists(filepath.Join(dir, "package.json"), false) {
 							logger.Infof("[gnpm] Detected package manager: %s (via %s)", name, lock)
 							var result = HandlePackageManager(dir, logger)
 							if result != nil {
-								return *result
+								return result
 							} else {
-								return PackageManagerDetectionResult{
+								return &PackageManagerDetectionResult{
 									Name:    name,
 									Version: nil,
 									Agent:   &name,
@@ -155,15 +160,42 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) PackageManagerDe
 				}
 				break
 			case "packageManager-field", "devEngines-field":
-				if pathExists(filepath.Join(dir, "package.json")) {
+				if pathExists(filepath.Join(dir, "package.json"), false) {
 					var result = HandlePackageManager(dir, logger)
 					if result != nil {
-						return *result
+						return result
 					}
 				}
 				break
+			case "install-metadata":
+				{
+					for metadata, tool := range INSTALL_METADATA {
+						var isMetadataDir = strings.HasPrefix(metadata, "/")
+						if pathExists(filepath.Join(dir, metadata), isMetadataDir) {
+							var result = PackageManagerDetectionResult{
+								Name:  tool,
+								Agent: &tool,
+							}
+							if tool == "yarn" {
+								if isMetadataYarnClassic(metadata) {
+									var agentYarn = AgentYarn
+									result.Agent = &agentYarn
+								} else {
+									var agentYarn = AgentYarnBerry
+									result.Agent = &agentYarn
+								}
+							}
+
+							return &result
+						}
+					}
+					break
+				}
 			}
 		}
+		if dir == path {
+			break
+		}
 	}
-
+	return nil
 }
