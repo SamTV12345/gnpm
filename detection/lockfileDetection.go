@@ -58,16 +58,19 @@ func handleVer(version *string) *string {
 }
 
 func getNameAndVer(pm packageJson.PackageManifest) *PackageManagerDetectionResult {
-	pmString, ok := (*pm.PackageManager).(string)
-	if pm.PackageManager != nil && ok {
-		var depRangeMarker = regexp.MustCompile("^\\^")
-		replacedPackageManager := depRangeMarker.ReplaceAll([]byte(pmString), []byte(""))
-		var resultingNameAndVersion = strings.Split(string(replacedPackageManager), "@")
 
-		return &PackageManagerDetectionResult{
-			Name:    resultingNameAndVersion[0],
-			Version: handleVer(&resultingNameAndVersion[1]),
-			Agent:   nil,
+	if pm.PackageManager != nil {
+		pmString, ok := (*pm.PackageManager).(string)
+		if pm.PackageManager != nil && ok {
+			var depRangeMarker = regexp.MustCompile("^\\^")
+			replacedPackageManager := depRangeMarker.ReplaceAll([]byte(pmString), []byte(""))
+			var resultingNameAndVersion = strings.Split(string(replacedPackageManager), "@")
+
+			return &PackageManagerDetectionResult{
+				Name:    resultingNameAndVersion[0],
+				Version: handleVer(&resultingNameAndVersion[1]),
+				Agent:   nil,
+			}
 		}
 	}
 	if pm.DevEngines != nil && pm.DevEngines.PackageManager != nil && pm.DevEngines.PackageManager.Name != "" {
@@ -81,10 +84,11 @@ func getNameAndVer(pm packageJson.PackageManifest) *PackageManagerDetectionResul
 	return nil
 }
 
-func HandlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageManagerDetectionResult {
+func handlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageManagerDetectionResult {
 	pm, err := packageJson.ReadPackageJson(filePath)
 	var agent string
 	if err != nil {
+		println(err.Error())
 		return nil
 	}
 	result := getNameAndVer(*pm)
@@ -103,16 +107,14 @@ func HandlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageMa
 					Version: &versionBerry,
 					Agent:   &agentBerry,
 				}
-			} else if name == "pnpm" {
-				if parsedVersion, err := strconv.Atoi(*result.Version); err == nil && parsedVersion < 7 {
-					agent = "pnpm@6"
-					return &PackageManagerDetectionResult{
-						Name:    name,
-						Version: version,
-						Agent:   &agent,
-					}
-				} else {
-					agent = AgentPnpm
+			}
+		} else if name == "pnpm" {
+			if parsedVersion, err := strconv.Atoi(*result.Version); err == nil && parsedVersion < 7 {
+				agent = "pnpm@6"
+				return &PackageManagerDetectionResult{
+					Name:    name,
+					Version: version,
+					Agent:   &agent,
 				}
 			} else if slices.Contains(Agents, name) {
 				agent = name
@@ -121,9 +123,16 @@ func HandlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageMa
 					Version: version,
 					Agent:   &agent,
 				}
-			} else {
-				logger.Warn("[gnpm] Unknown packageManager:" + name)
 			}
+		} else if slices.Contains(Agents, name) {
+			agent = name
+			return &PackageManagerDetectionResult{
+				Name:    name,
+				Version: version,
+				Agent:   &agent,
+			}
+		} else {
+			logger.Warn("[gnpm] Unknown packageManager:" + name)
 		}
 	}
 
@@ -144,9 +153,15 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 				for lock, name := range LOCKS {
 					if pathExists(filepath.Join(dir, lock), false) {
 						if pathExists(filepath.Join(dir, "package.json"), false) {
-							logger.Infof("[gnpm] Detected package manager: %s (via %s)", name, lock)
-							var result = HandlePackageManager(dir, logger)
+							// Package Manager field in package.json takes precedence over lockfile detection
+							var result = handlePackageManager(filepath.Join(dir, "package.json"), logger)
 							if result != nil {
+								if result.Version != nil {
+									logger.Infof("[gnpm] Detected package manager: %s in version %s", result.Name, *result.Version)
+								} else {
+									logger.Infof("[gnpm] Detected package manager: %s", result.Name)
+
+								}
 								return result
 							} else {
 								return &PackageManagerDetectionResult{
@@ -161,7 +176,7 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 				break
 			case "packageManager-field", "devEngines-field":
 				if pathExists(filepath.Join(dir, "package.json"), false) {
-					var result = HandlePackageManager(dir, logger)
+					var result = handlePackageManager(filepath.Join(dir, "package.json"), logger)
 					if result != nil {
 						return result
 					}
