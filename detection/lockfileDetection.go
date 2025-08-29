@@ -88,7 +88,7 @@ func handlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageMa
 	pm, err := packageJson.ReadPackageJson(filePath)
 	var agent string
 	if err != nil {
-		println(err.Error())
+		logger.Error("Error reading package.json file")
 		return nil
 	}
 	result := getNameAndVer(*pm)

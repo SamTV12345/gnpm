@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/schollz/progressbar/v3"
 	"go.uber.org/zap"
 )
 
@@ -64,14 +66,17 @@ func DownloadNodeJS(url string, sha256Sum string, logger *zap.SugaredLogger) ([]
 		return nil, err
 	}
 	defer response.Body.Close()
-	data, err := io.ReadAll(response.Body)
+	buf := bytes.Buffer{}
+	bar := progressbar.NewOptions64(response.ContentLength, progressbar.OptionSetDescription("Downloading Node.js"), progressbar.OptionShowTotalBytes(true))
+	multiWriter := io.MultiWriter(&buf, bar)
+	_, err = io.Copy(multiWriter, response.Body)
 	if err != nil {
 		logger.Error("Error reading Node.js download:", err)
 		return nil, err
 	}
+	data := buf.Bytes()
 	hash := sha256.Sum256(data)
 	hashHex := hex.EncodeToString(hash[:])
-	println(hashHex)
 	if sha256Sum != "" && sha256Sum != strings.ToLower(hashHex) {
 		logger.Error("SHA256 checksum does not match")
 		return nil, errors.New("SHA256 checksum does not match")
