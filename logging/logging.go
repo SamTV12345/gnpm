@@ -1,13 +1,24 @@
 package logging
 
 import (
+	"os"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
+func getLogLevel() zap.AtomicLevel {
+	levelStr := os.Getenv("LOG_LEVEL")
+	var level zapcore.Level
+	if err := level.Set(levelStr); err != nil {
+		return zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	}
+	return zap.NewAtomicLevelAt(level)
+}
+
 func CreateLogger() *zap.SugaredLogger {
 	config := zap.Config{
-		Level:            zap.NewAtomicLevelAt(zapcore.InfoLevel),
+		Level:            getLogLevel(),
 		Development:      true,
 		Encoding:         "console",
 		OutputPaths:      []string{"stdout"},

@@ -5,6 +5,7 @@ import (
 
 	"github.com/samtv12345/gnpm/commandRun"
 	"github.com/samtv12345/gnpm/detection"
+	"github.com/samtv12345/gnpm/gnpm"
 	"github.com/samtv12345/gnpm/logging"
 )
 
@@ -28,6 +29,12 @@ func main() {
 		logger.Warn("You need to specify a command to run")
 		return
 	}
-	var remaningArgs = args[1:]
-	commandRun.RunCommand(*packageManagerDecision, remaningArgs, logger)
+	var remainingArgs = args[1:]
+
+	if remainingArgs[0] == "use" {
+		gnpm.HandleNodeVersion(remainingArgs[1:], logger)
+
+	} else {
+		commandRun.RunCommand(*packageManagerDecision, remainingArgs, logger)
+	}
 }
