@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/samtv12345/gnpm/commandRun"
 	"github.com/samtv12345/gnpm/detection"
 	"github.com/samtv12345/gnpm/logging"
 )
@@ -21,5 +22,12 @@ func main() {
 		logger.Info("No package manager detected")
 		return
 	}
-	println(packageManagerDecision.Name)
+	logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
+	var args = os.Args
+	if len(args) == 1 {
+		logger.Warn("You need to specify a command to run")
+		return
+	}
+	var remaningArgs = args[1:]
+	commandRun.RunCommand(*packageManagerDecision, remaningArgs, logger)
 }
