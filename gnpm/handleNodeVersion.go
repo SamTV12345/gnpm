@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/samtv12345/gnpm/caching"
 	"github.com/samtv12345/gnpm/detection"
 	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/http"
@@ -14,7 +15,7 @@ import (
 )
 
 func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
-	nodeVersions, err := http.GetNodeJsVersion(logger)
+	nodeVersions, err := caching.GetNodeJsVersion(logger)
 
 	if err != nil {
 		logger.Errorw("Error fetching Node.js versions", "error", err)
@@ -35,7 +36,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 			return
 		}
 		logger.Debugf("Node.js download URL: %s", createNodeDownloadUrlInfo.NodeUrl)
-		exists, err := filemanagement.HasNodeVersionInCache(createNodeDownloadUrlInfo)
+		exists, err := filemanagement.HasNodeVersionInCache(createNodeDownloadUrlInfo, logger)
 		if err != nil {
 			logger.Errorw("Error checking Node.js cache", "error", err)
 			return

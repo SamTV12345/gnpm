@@ -1,6 +1,7 @@
 package filemanagement
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -8,23 +9,27 @@ import (
 
 const DataDir = "gnpm"
 
-func EnsureDataDir() (string, error) {
+func EnsureDataDir() (*string, error) {
 	dir := userDataDir()
 	if dir == "" {
-		return "", nil
+		return nil, errors.New(DataDir + " not found in $PATH")
 	}
 	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return dir, nil
+	err = os.MkdirAll(filepath.Join(dir, ".cache"), os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	return &dir, nil
 }
 
 func userDataDir() string {
 	switch runtime.GOOS {
 	case "windows":
 		if appData := os.Getenv("APPDATA"); appData != "" {
-			return filepath.Join(appData, "Roaming", DataDir)
+			return filepath.Join(appData, DataDir)
 		}
 	case "darwin":
 		home := os.Getenv("HOME")

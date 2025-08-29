@@ -13,7 +13,7 @@ func SaveNodeJSToCacheDir(nodeData []byte, createNodeDat models.CreateNodeDownlo
 	if err != nil {
 		return nil, err
 	}
-	cacheDir := filepath.Join(dataDir, ".cache")
+	cacheDir := filepath.Join(*dataDir, ".cache")
 	err = os.Mkdir(cacheDir, os.ModePerm)
 	if err != nil && !os.IsExist(err) {
 		return nil, err
@@ -27,12 +27,13 @@ func SaveNodeJSToCacheDir(nodeData []byte, createNodeDat models.CreateNodeDownlo
 	return &locationToWriteNodeJSArchive, nil
 }
 
-func HasNodeVersionInCache(downloadStruct *models.CreateNodeDownloadStruct) (*bool, error) {
+func HasNodeVersionInCache(downloadStruct *models.CreateNodeDownloadStruct, logger *zap.SugaredLogger) (*bool, error) {
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, err
 	}
-	cacheFileOfNodeJs := filepath.Join(dataDir, ".cache", downloadStruct.Filename)
+	cacheFileOfNodeJs := filepath.Join(*dataDir, ".cache", downloadStruct.Filename)
+	logger.Debugf("Checking if Node.js exists at: %s", cacheFileOfNodeJs)
 	_, err = os.Stat(cacheFileOfNodeJs)
 
 	if os.IsNotExist(err) {
