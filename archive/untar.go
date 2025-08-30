@@ -38,7 +38,7 @@ func IsGzipTar(path string) (bool, error) {
 	return magic[0] == 0x1F && magic[1] == 0x8B, nil
 }
 
-func Untar(path string) (*string, error) {
+func untar(path string) (*string, error) {
 	tarballArchive, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

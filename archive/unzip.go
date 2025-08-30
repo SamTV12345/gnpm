@@ -11,7 +11,15 @@ import (
 	"github.com/samtv12345/gnpm/filemanagement"
 )
 
-func Unzip(path string) (*string, error) {
+func StripFirstDir(path string) string {
+	parts := strings.SplitN(path, "/", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return path
+}
+
+func unzip(path string) (*string, error) {
 	archive, err := zip.OpenReader(path)
 	if err != nil {
 		return nil, err
@@ -22,7 +30,13 @@ func Unzip(path string) (*string, error) {
 		return nil, err
 	}
 	for _, f := range archive.File {
-		filePath := filepath.Join(*targetPath, f.Name)
+		relPath := StripFirstDir(f.Name)
+
+		if relPath == "" {
+			continue
+		}
+
+		filePath := filepath.Join(*targetPath, relPath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(*targetPath)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
@@ -34,17 +48,17 @@ func Unzip(path string) (*string, error) {
 		}
 
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		fileInArchive, err := f.Open()
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {

@@ -51,7 +51,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 				logger.Errorw("Error downloading Node.js", "error", err)
 				return
 			}
-			filename, err := filemanagement.SaveNodeJSToCacheDir(nodeJsData, *createNodeDownloadUrlInfo, logger)
+			filename, err = filemanagement.SaveNodeJSToCacheDir(nodeJsData, *createNodeDownloadUrlInfo, logger)
 			if err != nil {
 				logger.Errorw("Error saving Node.js to cache", "error", err)
 				return
@@ -63,13 +63,24 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 			return
 		}
 
-		// Unpack the Node.js archive
-		targetLocation, err := archive.Unzip(*filename)
+		targetPath, err := filemanagement.DoesTargetDirExist(*filename)
 		if err != nil {
-			logger.Errorw("Error extracting Node.js archive", "error", err)
+			logger.Errorw("Error creating target directory for Node.js extraction", "error", err)
 			return
 		}
-		logger.Infof("Node.js extracted to: %s", *targetLocation)
+
+		if filemanagement.HasArchiveBeenExtracted(*targetPath) {
+			logger.Debugf("Node.js version %s already extracted at: %s", nodeVersionToDownload.Version, *targetPath)
+			return
+		} else {
+			// Unpack the Node.js archive
+			targetLocation, err := archive.UnarchiveFile(*filename)
+			if err != nil {
+				logger.Errorw("Error extracting Node.js archive", "error", err)
+				return
+			}
+			logger.Debugf("Node.js extracted to: %s", *targetLocation)
+		}
 	}
 }
 
