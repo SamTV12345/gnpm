@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/samtv12345/gnpm/archive"
 	"github.com/samtv12345/gnpm/caching"
 	"github.com/samtv12345/gnpm/detection"
 	"github.com/samtv12345/gnpm/filemanagement"
@@ -36,27 +37,39 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 			return
 		}
 		logger.Debugf("Node.js download URL: %s", createNodeDownloadUrlInfo.NodeUrl)
-		exists, err := filemanagement.HasNodeVersionInCache(createNodeDownloadUrlInfo, logger)
+		exists, filename, err := filemanagement.HasNodeVersionInCache(createNodeDownloadUrlInfo, logger)
 		if err != nil {
 			logger.Errorw("Error checking Node.js cache", "error", err)
 			return
 		}
 		if *exists {
 			logger.Infof("Node.js version %s already exists in cache", nodeVersionToDownload.Version)
+		} else {
+			// Download and save to cache
+			nodeJsData, err := http.DownloadNodeJS(createNodeDownloadUrlInfo.NodeUrl, createNodeDownloadUrlInfo.Sha256, logger)
+			if err != nil {
+				logger.Errorw("Error downloading Node.js", "error", err)
+				return
+			}
+			filename, err := filemanagement.SaveNodeJSToCacheDir(nodeJsData, *createNodeDownloadUrlInfo, logger)
+			if err != nil {
+				logger.Errorw("Error saving Node.js to cache", "error", err)
+				return
+			}
+			logger.Infof("Node.js saved to cache at: %s", *filename)
+		}
+		if filename == nil {
+			logger.Errorw("Filename is nil after checking cache and downloading", "error", err)
 			return
 		}
 
-		nodeJsData, err := http.DownloadNodeJS(createNodeDownloadUrlInfo.NodeUrl, createNodeDownloadUrlInfo.Sha256, logger)
+		// Unpack the Node.js archive
+		targetLocation, err := archive.Unzip(*filename)
 		if err != nil {
-			logger.Errorw("Error downloading Node.js", "error", err)
+			logger.Errorw("Error extracting Node.js archive", "error", err)
 			return
 		}
-		filename, err := filemanagement.SaveNodeJSToCacheDir(nodeJsData, *createNodeDownloadUrlInfo, logger)
-		if err != nil {
-			logger.Errorw("Error saving Node.js to cache", "error", err)
-			return
-		}
-		logger.Infof("Node.js saved to cache at: %s", *filename)
+		logger.Infof("Node.js extracted to: %s", *targetLocation)
 	}
 }
 
@@ -81,7 +94,6 @@ func createNodeDownloadUrl(nodeVersionToDownload http.NodeIndex, logger *zap.Sug
 		return nil, err
 	}
 
-	logger.Infof("Downloading Node.js version: %s", nodeVersionToDownload.Version)
 	operatingSystem := runtime.GOOS
 	architecture := runtime.GOARCH
 

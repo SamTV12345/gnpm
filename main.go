@@ -17,13 +17,6 @@ func main() {
 		logger.Error("Failed to get current working directory", err)
 		return
 	}
-
-	var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
-	if packageManagerDecision == nil {
-		logger.Info("No package manager detected")
-		return
-	}
-	logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
 	var args = os.Args
 	if len(args) == 1 {
 		logger.Warn("You need to specify a command to run")
@@ -33,8 +26,13 @@ func main() {
 
 	if remainingArgs[0] == "use" {
 		gnpm.HandleNodeVersion(remainingArgs[1:], logger)
-
 	} else {
+		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
+		if packageManagerDecision == nil {
+			logger.Info("No package manager detected")
+			return
+		}
+		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
 		commandRun.RunCommand(*packageManagerDecision, remainingArgs, logger)
 	}
 }
