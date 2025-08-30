@@ -26,6 +26,13 @@ func main() {
 
 	if remainingArgs[0] == "use" {
 		gnpm.HandleNodeVersion(remainingArgs[1:], logger)
+		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
+		if packageManagerDecision == nil {
+			logger.Info("No package manager detected")
+			return
+		}
+		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
+		gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
 	} else {
 		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
 		if packageManagerDecision == nil {

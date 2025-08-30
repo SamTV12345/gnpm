@@ -25,7 +25,6 @@ func CreateTargetDir(sourcefile string) (*string, error) {
 
 func DoesTargetDirExist(sourcefile string) (*string, error) {
 	filename := filepath.Base(sourcefile)
-	println(stripSuffix(filename))
 	targetDir := filepath.Join(filepath.Dir(sourcefile), "..", "_gnpm", stripSuffix(filename))
 	return &targetDir, nil
 }

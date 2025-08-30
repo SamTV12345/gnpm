@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/samtv12345/gnpm/filemanagement"
+	"go.uber.org/zap"
 )
 
 func splitAfterNthOccurenceOfSign(s string, sep rune, n int) (string, string) {
@@ -38,7 +39,7 @@ func IsGzipTar(path string) (bool, error) {
 	return magic[0] == 0x1F && magic[1] == 0x8B, nil
 }
 
-func untar(path string) (*string, error) {
+func untar(path string, _ *zap.SugaredLogger) (*string, error) {
 	tarballArchive, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

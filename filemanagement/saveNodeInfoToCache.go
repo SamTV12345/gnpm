@@ -13,7 +13,7 @@ func SaveNodeInfoToFilesystem(nodeIndices []http.NodeIndex) error {
 	if err != nil {
 		return err
 	}
-	cacheDir, err := getCacheDir()
+	cacheDir, err := GetCacheDir()
 	if err != nil {
 		return err
 	}
@@ -21,7 +21,7 @@ func SaveNodeInfoToFilesystem(nodeIndices []http.NodeIndex) error {
 	return os.WriteFile(pathToSaveTo, jsonBytes, os.ModePerm)
 }
 
-func getCacheDir() (*string, error) {
+func GetCacheDir() (*string, error) {
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func getCacheDir() (*string, error) {
 }
 
 func ReadNodeInfoFromFilesystem() (*[]http.NodeIndex, error) {
-	cacheDir, err := getCacheDir()
+	cacheDir, err := GetCacheDir()
 	if err != nil {
 		return nil, err
 	}

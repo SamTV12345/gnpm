@@ -74,7 +74,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 			return
 		} else {
 			// Unpack the Node.js archive
-			targetLocation, err := archive.UnarchiveFile(*filename)
+			targetLocation, err := archive.UnarchiveFile(*filename, logger)
 			if err != nil {
 				logger.Errorw("Error extracting Node.js archive", "error", err)
 				return

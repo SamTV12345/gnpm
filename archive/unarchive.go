@@ -1,13 +1,17 @@
 package archive
 
-import "path/filepath"
+import (
+	"path/filepath"
 
-func UnarchiveFile(path string) (*string, error) {
+	"go.uber.org/zap"
+)
+
+func UnarchiveFile(path string, logger *zap.SugaredLogger) (*string, error) {
 	var extension = filepath.Ext(path)
 	if extension == ".zip" {
-		return unzip(path)
+		return unzip(path, logger)
 	} else if extension == ".gz" {
-		return untar(path)
+		return untar(path, logger)
 	} else {
 		return nil, nil
 	}
