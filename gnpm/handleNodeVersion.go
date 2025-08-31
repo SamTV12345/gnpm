@@ -46,7 +46,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 			logger.Infof("Node.js version %s already exists in cache", nodeVersionToDownload.Version)
 		} else {
 			// Download and save to cache
-			nodeJsData, err := http.DownloadNodeJS(createNodeDownloadUrlInfo.NodeUrl, createNodeDownloadUrlInfo.Sha256, logger)
+			nodeJsData, err := http.DownloadFile(createNodeDownloadUrlInfo.NodeUrl, &createNodeDownloadUrlInfo.Sha256, logger, "Downloading Node.js")
 			if err != nil {
 				logger.Errorw("Error downloading Node.js", "error", err)
 				return
