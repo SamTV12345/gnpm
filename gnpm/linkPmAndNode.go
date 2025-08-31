@@ -32,8 +32,7 @@ func LinkPackageManager(targetPaths []string, logger *zap.SugaredLogger, detecti
 	for _, path := range targetPaths {
 		filePathToCheck := filepath.Join(moduleDir, filepath.Base(path))
 		logger.Debugf("Checking path: %s", filePathToCheck)
-		_, err := os.Stat(filePathToCheck)
-		if err == nil {
+		if _, err := os.Lstat(filePathToCheck); err == nil {
 			if err := os.Remove(filePathToCheck); err != nil {
 				return err
 			}
