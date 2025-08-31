@@ -21,6 +21,11 @@ func createRelevantNodePaths(targetPath string) []string {
 		return []string{nodePath}
 	}
 
+	if runtime.GOOS == "linux" {
+		nodePath := filepath.Join(targetPath, "bin", "node")
+		return []string{nodePath}
+	}
+
 	var nodePath = filepath.Join(targetPath, "node")
 	return []string{nodePath}
 }
