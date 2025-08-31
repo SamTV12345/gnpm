@@ -97,7 +97,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*[]string, err
 
 func filterCorrectFilenameEnding(filenamePrefix string, shaSumsOFFiles []http.NodeShasum) *http.NodeShasumWithEncoding {
 	for _, file := range shaSumsOFFiles {
-		if strings.HasPrefix(file.Filename, filenamePrefix) && (strings.HasSuffix(file.Filename, ".tar.xz") || strings.HasSuffix(file.Filename, ".zip")) {
+		if strings.HasPrefix(file.Filename, filenamePrefix) && (strings.HasSuffix(file.Filename, ".tar.gz") || strings.HasSuffix(file.Filename, ".zip")) {
 			fileExtension := filepath.Ext(file.Filename)
 			return &http.NodeShasumWithEncoding{
 				NodeShasum: file,

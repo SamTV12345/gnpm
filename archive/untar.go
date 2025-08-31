@@ -39,7 +39,7 @@ func IsGzipTar(path string) (bool, error) {
 	return magic[0] == 0x1F && magic[1] == 0x8B, nil
 }
 
-func untar(path string, _ *zap.SugaredLogger) (*string, error) {
+func untar(path string, logger *zap.SugaredLogger) (*string, error) {
 	tarballArchive, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -54,6 +54,7 @@ func untar(path string, _ *zap.SugaredLogger) (*string, error) {
 	}
 
 	if isGzipTar {
+		logger.Debugf("Extracting tarball with gzip from %s", path)
 		gzipReader, err := gzip.NewReader(readerToUse)
 		defer gzipReader.Close()
 		if err != nil {
@@ -61,6 +62,8 @@ func untar(path string, _ *zap.SugaredLogger) (*string, error) {
 		}
 		readerToUse = gzipReader
 	}
+
+	logger.Debugf("Extracting tarball from %s", path)
 
 	if err != nil {
 		return nil, err
