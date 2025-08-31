@@ -1,6 +1,7 @@
 package gnpm
 
 import (
+	"errors"
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
@@ -11,15 +12,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) {
+func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) (*string, error) {
 	isInstalled, targetPath, err := filemanagement.IsPnpmVersionInInstallDir(*result.Version)
 	if err != nil {
 		logger.Warnf("Error checking if pnpm version is installed: %v", err)
-		return
+		return nil, err
 	}
 	if *isInstalled && targetPath != nil {
 		logger.Infof("pnpm version %s is already installed in %s", *result.Version, *targetPath)
-		return
+		return targetPath, nil
 	}
 	// Get all available pnpm versions
 	pnpmVersions := caching.GetPnpmVersion(logger)
@@ -35,7 +36,7 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 	constraint, err := semver.NewConstraint(*result.Version)
 	if err != nil {
 		logger.Warnf("Error parsing version constraint %s: %v", *result.Version, err)
-		return
+		return nil, err
 	}
 	var matchedVersions []*semver.Version
 	for _, v := range vs {
@@ -45,7 +46,7 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 	}
 	if len(matchedVersions) == 0 {
 		logger.Warnf("No matching versions found for constraint %s", *result.Version)
-		return
+		return nil, errors.New("no matching versions found")
 	}
 	sort.Sort(semver.Collection(matchedVersions))
 	selectedVersion := matchedVersions[len(matchedVersions)-1]
@@ -53,8 +54,13 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 	release, err := http.DownloadPnpmRelease(selectedVersion.String(), logger)
 	if err != nil {
 		logger.Warnf("Error getting release of pnpm: %v", err)
-		return
+		return nil, err
 	}
 	targetPath, err = filemanagement.SavePnpmToInstallDir(release, logger, selectedVersion.String())
 
+	if err != nil {
+		logger.Warnf("Error saving pnpm to install dir: %v", err)
+		return nil, err
+	}
+	return targetPath, nil
 }

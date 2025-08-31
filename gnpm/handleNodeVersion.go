@@ -15,12 +15,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
+func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*string, error) {
 	nodeVersions, err := caching.GetNodeJsVersion(logger)
 
 	if err != nil {
 		logger.Errorw("Error fetching Node.js versions", "error", err)
-		return
+		return nil, err
 	}
 
 	if len(args) == 0 {
@@ -28,19 +28,19 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 		nodeVersionToDownload, err := detection.GetNodeVersion(nil, logger, nodeVersions)
 		if err != nil {
 			logger.Errorw("Error determining Node.js version", "error", err)
-			return
+			return nil, err
 		}
 		logger.Infof("Node.js version to use: %s", nodeVersionToDownload.Version)
 		createNodeDownloadUrlInfo, err := createNodeDownloadUrl(*nodeVersionToDownload, logger)
 		if err != nil {
 			logger.Errorw("Error creating Node.js download URL", "error", err)
-			return
+			return nil, err
 		}
 		logger.Debugf("Node.js download URL: %s", createNodeDownloadUrlInfo.NodeUrl)
 		exists, filename, err := filemanagement.HasNodeVersionInCache(createNodeDownloadUrlInfo, logger)
 		if err != nil {
 			logger.Errorw("Error checking Node.js cache", "error", err)
-			return
+			return nil, err
 		}
 		if *exists {
 			logger.Infof("Node.js version %s already exists in cache", nodeVersionToDownload.Version)
@@ -49,39 +49,41 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) {
 			nodeJsData, err := http.DownloadFile(createNodeDownloadUrlInfo.NodeUrl, &createNodeDownloadUrlInfo.Sha256, logger, "Downloading Node.js")
 			if err != nil {
 				logger.Errorw("Error downloading Node.js", "error", err)
-				return
+				return nil, err
 			}
 			filename, err = filemanagement.SaveNodeJSToCacheDir(nodeJsData, *createNodeDownloadUrlInfo, logger)
 			if err != nil {
 				logger.Errorw("Error saving Node.js to cache", "error", err)
-				return
+				return nil, err
 			}
 			logger.Infof("Node.js saved to cache at: %s", *filename)
 		}
 		if filename == nil {
 			logger.Errorw("Filename is nil after checking cache and downloading", "error", err)
-			return
+			return nil, err
 		}
 
 		targetPath, err := filemanagement.DoesTargetDirExist(*filename)
 		if err != nil {
 			logger.Errorw("Error creating target directory for Node.js extraction", "error", err)
-			return
+			return nil, err
 		}
 
 		if filemanagement.HasArchiveBeenExtracted(*targetPath) {
 			logger.Debugf("Node.js version %s already extracted at: %s", nodeVersionToDownload.Version, *targetPath)
-			return
+			return nil, err
 		} else {
 			// Unpack the Node.js archive
 			targetLocation, err := archive.UnarchiveFile(*filename, logger)
 			if err != nil {
 				logger.Errorw("Error extracting Node.js archive", "error", err)
-				return
+				return nil, err
 			}
 			logger.Debugf("Node.js extracted to: %s", *targetLocation)
 		}
+		return targetPath, nil
 	}
+	return nil, errors.New("too many arguments provided. Usage: gnpm use [node_version]")
 }
 
 func filterCorrectFilenameEnding(filenamePrefix string, shaSumsOFFiles []http.NodeShasum) *http.NodeShasumWithEncoding {

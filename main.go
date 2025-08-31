@@ -12,7 +12,7 @@ import (
 func main() {
 	var logger = logging.CreateLogger()
 	defer logger.Sync()
-	var cwd, err = os.Getwd()
+	cwd, err := os.Getwd()
 	if err != nil {
 		logger.Error("Failed to get current working directory", err)
 		return
@@ -25,14 +25,30 @@ func main() {
 	var remainingArgs = args[1:]
 
 	if remainingArgs[0] == "use" {
-		gnpm.HandleNodeVersion(remainingArgs[1:], logger)
+		// Download and link all node and pnpm versions
+		nodeTargetPath, err := gnpm.HandleNodeVersion(remainingArgs[1:], logger)
+		if err != nil {
+			return
+		}
 		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
 		if packageManagerDecision == nil {
 			logger.Info("No package manager detected")
 			return
 		}
 		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
-		gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
+		pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
+		if err != nil {
+			logger.Errorw("Error handling package manager version", "error", err)
+			return
+		}
+		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
+		err = gnpm.LinkPackageManager(nodeTargetPath, pmTargetPath, logger)
+		if err != nil {
+			return
+		}
+
+		// Link
+
 	} else {
 		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
 		if packageManagerDecision == nil {
