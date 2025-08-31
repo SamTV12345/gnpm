@@ -16,11 +16,8 @@ func RunCommand(detectionResult detection.PackageManagerDetectionResult, remaini
 		cmdToRun := exec.Command("node", remainingArgs[1:]...)
 		cmdToRun.Stdout = os.Stdout
 		cmdToRun.Stderr = os.Stderr
-		if err := cmdToRun.Start(); err != nil {
+		if err := cmdToRun.Run(); err != nil {
 			logger.Errorw("Error running node command", "error", err)
-		}
-		if err := cmdToRun.Wait(); err != nil {
-			logger.Errorw("Error waiting for node command to finish", "error", err)
 		}
 		return
 	}
@@ -46,6 +43,7 @@ func RunCommand(detectionResult detection.PackageManagerDetectionResult, remaini
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Start()
-	cmd.Wait()
+	if err := cmd.Run(); err != nil {
+		logger.Errorw("Error running command", "error", err)
+	}
 }
