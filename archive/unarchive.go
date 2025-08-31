@@ -13,6 +13,6 @@ func UnarchiveFile(path string, logger *zap.SugaredLogger) (*string, error) {
 	} else if extension == ".gz" {
 		return untar(path, logger)
 	} else {
-		return nil, nil
+		panic("Unrecognized file extension " + extension)
 	}
 }
