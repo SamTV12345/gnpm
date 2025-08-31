@@ -60,7 +60,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*string, error
 		}
 		if filename == nil {
 			logger.Errorw("Filename is nil after checking cache and downloading", "error", err)
-			return nil, err
+			return nil, errors.New("filename is nil after checking cache and downloading")
 		}
 
 		targetPath, err := filemanagement.DoesTargetDirExist(*filename)
@@ -71,7 +71,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*string, error
 
 		if filemanagement.HasArchiveBeenExtracted(*targetPath) {
 			logger.Debugf("Node.js version %s already extracted at: %s", nodeVersionToDownload.Version, *targetPath)
-			return nil, err
+			return targetPath, nil
 		} else {
 			// Unpack the Node.js archive
 			targetLocation, err := archive.UnarchiveFile(*filename, logger)

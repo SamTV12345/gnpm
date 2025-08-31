@@ -42,13 +42,12 @@ func main() {
 			return
 		}
 		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
-		err = gnpm.LinkPackageManager(nodeTargetPath, pmTargetPath, logger)
+
+		// Link
+		err = gnpm.LinkPackageManager(*nodeTargetPath, *pmTargetPath, logger, packageManagerDecision)
 		if err != nil {
 			return
 		}
-
-		// Link
-
 	} else {
 		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
 		if packageManagerDecision == nil {

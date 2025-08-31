@@ -25,6 +25,19 @@ func EnsureDataDir() (*string, error) {
 	return &dir, nil
 }
 
+func EnsureModuleDir() (*string, error) {
+	dataDir, err := EnsureDataDir()
+	if err != nil {
+		return nil, err
+	}
+	modulesDir := filepath.Join(*dataDir, "modules")
+	err = os.MkdirAll(modulesDir, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	return &modulesDir, nil
+}
+
 func userDataDir() string {
 	switch runtime.GOOS {
 	case "windows":
