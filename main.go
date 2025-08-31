@@ -47,6 +47,7 @@ func main() {
 	*nodeTargetPath = append(*nodeTargetPath, *pmTargetPath)
 	err = gnpm.LinkPackageManager(*nodeTargetPath, logger, packageManagerDecision)
 	if err != nil {
+		logger.Errorf("Error linking package manager to %s: %s", *pmTargetPath, err)
 		return
 	}
 	logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
