@@ -24,37 +24,31 @@ func main() {
 	}
 	var remainingArgs = args[1:]
 
-	if remainingArgs[0] == "use" {
-		// Download and link all node and pnpm versions
-		nodeTargetPath, err := gnpm.HandleNodeVersion(remainingArgs[1:], logger)
-		if err != nil {
-			return
-		}
-		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
-		if packageManagerDecision == nil {
-			logger.Info("No package manager detected")
-			return
-		}
-		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
-		pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
-		if err != nil {
-			logger.Errorw("Error handling package manager version", "error", err)
-			return
-		}
-		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
-
-		// Link
-		err = gnpm.LinkPackageManager(*nodeTargetPath, *pmTargetPath, logger, packageManagerDecision)
-		if err != nil {
-			return
-		}
-	} else {
-		var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
-		if packageManagerDecision == nil {
-			logger.Info("No package manager detected")
-			return
-		}
-		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
-		commandRun.RunCommand(*packageManagerDecision, remainingArgs, logger)
+	// Download and link all node and pnpm versions
+	nodeTargetPath, err := gnpm.HandleNodeVersion(remainingArgs[1:], logger)
+	if err != nil {
+		logger.Errorw("Error handling node version", "error", err)
+		return
 	}
+	var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
+	if packageManagerDecision == nil {
+		logger.Info("No package manager detected")
+		return
+	}
+	logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
+	pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
+	if err != nil {
+		logger.Errorw("Error handling package manager version", "error", err)
+		return
+	}
+	logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
+
+	// Link
+	*nodeTargetPath = append(*nodeTargetPath, *pmTargetPath)
+	err = gnpm.LinkPackageManager(*nodeTargetPath, logger, packageManagerDecision)
+	if err != nil {
+		return
+	}
+	logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
+	commandRun.RunCommand(*packageManagerDecision, remainingArgs, logger)
 }

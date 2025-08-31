@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func LinkPackageManager(targetNodePath, targetPackageManagerPath string, logger *zap.SugaredLogger, detection *detection.PackageManagerDetectionResult) error {
+func LinkPackageManager(targetPaths []string, logger *zap.SugaredLogger, detection *detection.PackageManagerDetectionResult) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -29,30 +29,26 @@ func LinkPackageManager(targetNodePath, targetPackageManagerPath string, logger 
 		return err
 	}
 
-	if _, err := os.Stat(filepath.Join(moduleDir, "node")); err == nil {
-		err = os.Remove(filepath.Join(moduleDir, "node"))
+	for _, path := range targetPaths {
+		filePathToCheck := filepath.Join(moduleDir, filepath.Base(path))
+		logger.Debugf("Checking path: %s", filePathToCheck)
+		_, err := os.Stat(filePathToCheck)
 		if err != nil {
 			return err
 		}
+		if err := os.Remove(filePathToCheck); err != nil {
+			return err
+		}
 	}
-	if _, err := os.Stat(filepath.Join(moduleDir, detection.Name)); err == nil {
-		err = os.Remove(filepath.Join(moduleDir, detection.Name))
+
+	for _, path := range targetPaths {
+		logger.Debugf("Creating path: %s", path)
+		filePathToCheck := filepath.Join(moduleDir, filepath.Base(path))
+		err := os.Symlink(path, filePathToCheck)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Create symlink
-	err = os.Symlink(targetNodePath, filepath.Join(moduleDir, "node"))
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	logger.Debugf("Symlink %s to %s", targetNodePath, moduleDir+"/node")
-	err = os.Symlink(targetPackageManagerPath, filepath.Join(moduleDir, detection.Name))
-	logger.Debugf("Symlink %s to %s", targetPackageManagerPath, filepath.Join(moduleDir, detection.Name))
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	return shell.PropagateChangesToCurrentShell(moduleDir)
+	return shell.PropagateChangesToCurrentShell(moduleDir, logger)
 }
