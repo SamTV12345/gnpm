@@ -39,12 +39,12 @@ jobs:
         with:
           name: gnpm-snapshot
           path: dist/*
-      - name: Create Snapshot Release
+      - name: Create Release
         if: github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/v')
         uses: ncipollo/release-action@v1
         with:
           artifacts: dist/*
-          name: 'Snapshot ${{ github.run_id }}'
+          tag: "snapshot-${{ github.run_id }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: true
