@@ -54,7 +54,8 @@ func handleVer(version *string) *string {
 	if match != "" {
 		return &match
 	}
-	return version
+	var asterisk = "*"
+	return &asterisk
 }
 
 func getNameAndVer(pm packageJson.PackageManifest) *PackageManagerDetectionResult {
@@ -148,6 +149,7 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 
 	for dir := range Lookup(path) {
 		for _, strategy := range strategies {
+			logger.Debugf("[gnpm] Detecting lockfile strategy: %s", strategy)
 			switch strategy {
 			case "lockfile":
 				for lock, name := range LOCKS {
@@ -164,9 +166,10 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 								}
 								return result
 							} else {
+								var asterisk = "*"
 								return &PackageManagerDetectionResult{
 									Name:    name,
-									Version: nil,
+									Version: &asterisk,
 									Agent:   &name,
 								}
 							}

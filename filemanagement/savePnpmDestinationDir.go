@@ -72,6 +72,9 @@ func buildPnpmFilename() string {
 }
 
 func IsPnpmVersionInInstallDir(version string) (*bool, *string, error) {
+	if version == "*" {
+		return &[]bool{false}[0], nil, nil
+	}
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, nil, err

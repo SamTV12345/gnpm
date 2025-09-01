@@ -13,15 +13,7 @@ import (
 )
 
 func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) (*string, error) {
-	isInstalled, targetPath, err := filemanagement.IsPnpmVersionInInstallDir(*result.Version)
-	if err != nil {
-		logger.Warnf("Error checking if pnpm version is installed: %v", err)
-		return nil, err
-	}
-	if *isInstalled && targetPath != nil {
-		logger.Infof("pnpm version %s is already installed in %s", *result.Version, *targetPath)
-		return targetPath, nil
-	}
+
 	// Get all available pnpm versions
 	pnpmVersions := caching.GetPnpmVersion(logger)
 	vs := make([]*semver.Version, len(pnpmVersions))
@@ -50,17 +42,27 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 	}
 	sort.Sort(semver.Collection(matchedVersions))
 	selectedVersion := matchedVersions[len(matchedVersions)-1]
-	logger.Infof("Selected pnpm version: %s", selectedVersion.String())
-	release, err := http.DownloadPnpmRelease(selectedVersion.String(), logger)
+	isInstalled, targetPath, err := filemanagement.IsPnpmVersionInInstallDir(selectedVersion.String())
 	if err != nil {
-		logger.Warnf("Error getting release of pnpm: %v", err)
+		logger.Warnf("Error checking if pnpm version is installed: %v", err)
 		return nil, err
 	}
-	targetPath, err = filemanagement.SavePnpmToInstallDir(release, logger, selectedVersion.String())
+	if *isInstalled && targetPath != nil {
+		logger.Infof("pnpm version %s is already installed in %s", *result.Version, *targetPath)
+		return targetPath, nil
+	} else {
+		logger.Infof("Selected pnpm version: %s", selectedVersion.String())
+		release, err := http.DownloadPnpmRelease(selectedVersion.String(), logger)
+		if err != nil {
+			logger.Warnf("Error getting release of pnpm: %v", err)
+			return nil, err
+		}
+		targetPath, err = filemanagement.SavePnpmToInstallDir(release, logger, selectedVersion.String())
+		if err != nil {
+			logger.Warnf("Error saving pnpm to install dir: %v", err)
+			return nil, err
+		}
+	}
 
-	if err != nil {
-		logger.Warnf("Error saving pnpm to install dir: %v", err)
-		return nil, err
-	}
 	return targetPath, nil
 }
