@@ -4,14 +4,13 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/samtv12345/gnpm/archive"
-	"github.com/samtv12345/gnpm/caching"
-	"github.com/samtv12345/gnpm/detection"
 	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/http"
 	"github.com/samtv12345/gnpm/models"
+	"github.com/samtv12345/gnpm/runtimes"
+	"github.com/samtv12345/gnpm/runtimes/interfaces"
 	"go.uber.org/zap"
 )
 
@@ -30,8 +29,9 @@ func createRelevantNodePaths(targetPath string) []string {
 	return []string{nodePath}
 }
 
-func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*[]string, error) {
-	nodeVersions, err := caching.GetNodeJsVersion(logger)
+func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (*[]string, error) {
+	var selectedRuntime = runtimes.GetRuntimeSelection("node", logger)
+	nodeVersions, err := selectedRuntime.GetAllVersionsOfRuntime()
 
 	if err != nil {
 		logger.Errorw("Error fetching Node.js versions", "error", err)
@@ -39,13 +39,13 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*[]string, err
 	}
 
 	// Parse node version from .nvmrc or package.json
-	nodeVersionToDownload, err := detection.GetNodeVersion(nil, logger, nodeVersions)
+	nodeVersionToDownload, err := selectedRuntime.GetInformationFromPackageJSON(nil, ".", nodeVersions)
 	if err != nil {
 		logger.Errorw("Error determining Node.js version", "error", err)
 		return nil, err
 	}
-	logger.Infof("Node.js version to use: %s", nodeVersionToDownload.Version)
-	createNodeDownloadUrlInfo, err := createNodeDownloadUrl(*nodeVersionToDownload, logger)
+	logger.Infof("Node.js version to use: %s", (*nodeVersionToDownload).GetVersion())
+	createNodeDownloadUrlInfo, err := createDownloadUrl(*nodeVersionToDownload, selectedRuntime, logger)
 	if err != nil {
 		logger.Errorw("Error creating Node.js download URL", "error", err)
 		return nil, err
@@ -57,7 +57,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*[]string, err
 		return nil, err
 	}
 	if *exists {
-		logger.Infof("Node.js version %s already exists in cache", nodeVersionToDownload.Version)
+		logger.Infof("Node.js version %s already exists in cache", (*nodeVersionToDownload).GetVersion())
 	} else {
 		// Download and save to cache
 		nodeJsData, err := http.DownloadFile(createNodeDownloadUrlInfo.NodeUrl, &createNodeDownloadUrlInfo.Sha256, logger, "Downloading Node.js")
@@ -84,7 +84,7 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*[]string, err
 	}
 
 	if filemanagement.HasArchiveBeenExtracted(*targetPath) {
-		logger.Debugf("Node.js version %s already extracted at: %s", nodeVersionToDownload.Version, *targetPath)
+		logger.Debugf("Node.js version %s already extracted at: %s", (*nodeVersionToDownload).GetVersion(), *targetPath)
 		relevantPaths := createRelevantNodePaths(*targetPath)
 		return &relevantPaths, nil
 	} else {
@@ -100,49 +100,25 @@ func HandleNodeVersion(args []string, logger *zap.SugaredLogger) (*[]string, err
 	return &relevantPaths, nil
 }
 
-func filterCorrectFilenameEnding(filenamePrefix string, shaSumsOFFiles []http.NodeShasum) *http.NodeShasumWithEncoding {
-	for _, file := range shaSumsOFFiles {
-		if strings.HasPrefix(file.Filename, filenamePrefix) && (strings.HasSuffix(file.Filename, ".tar.gz") || strings.HasSuffix(file.Filename, ".zip")) {
-			fileExtension := filepath.Ext(file.Filename)
-			return &http.NodeShasumWithEncoding{
-				NodeShasum: file,
-				Encoding:   fileExtension,
-			}
-		}
-	}
-	return nil
-}
-
-func createNodeDownloadUrl(nodeVersionToDownload http.NodeIndex, logger *zap.SugaredLogger) (*models.CreateNodeDownloadStruct, error) {
-	shaSumsOFFiles, err := http.GetShasumForNodeJSVersion(nodeVersionToDownload.Version, logger)
+func createDownloadUrl(nodeVersionToDownload interfaces.IRuntimeVersion, nodeRuntime interfaces.IRuntime, logger *zap.SugaredLogger) (*models.CreateDownloadStruct, error) {
+	shaSumsOFFiles, err := nodeRuntime.GetShaSumsForRuntime(nodeVersionToDownload.GetVersion())
 
 	if err != nil {
 		logger.Errorw("Error fetching SHASUMS256.txt", "error", err)
 		return nil, err
 	}
 
-	operatingSystem := runtime.GOOS
-	architecture := runtime.GOARCH
-
-	if operatingSystem == "windows" {
-		operatingSystem = "win"
+	filenamePrefix := nodeRuntime.GetFilenamePrefix(nodeVersionToDownload.GetVersion())
+	urlToNode, err := nodeRuntime.ToDownloadUrl(filenamePrefix, *shaSumsOFFiles, nodeVersionToDownload.GetVersion())
+	if err != nil {
+		logger.Errorw("Error creating Node.js download URL", "error", err)
+		return nil, err
 	}
-
-	if strings.Contains(architecture, "amd") {
-		architecture = strings.Replace(architecture, "amd", "x", 1)
+	downloadModel := archive.FilterCorrectFilenameEnding(filenamePrefix, *shaSumsOFFiles)
+	if downloadModel == nil {
+		logger.Errorw("No matching Node.js binary found for your platform")
+		return nil, errors.New("no matching Node.js binary found for your platform")
 	}
-
-	var filenamePrefix = "node-" + nodeVersionToDownload.Version + "-" + operatingSystem + "-" + architecture
-
-	filename := filterCorrectFilenameEnding(filenamePrefix, *shaSumsOFFiles)
-	if filename == nil {
-		logger.Errorw("Error finding correct Node.js binary for your platform", "error", err)
-		return nil, errors.New("error finding correct Node.js binary for your platform")
-	}
-
-	urlToNode := "https://nodejs.org/dist/" + nodeVersionToDownload.Version + "/" + filename.Filename
-	return &models.CreateNodeDownloadStruct{
-		NodeUrl:                urlToNode,
-		NodeShasumWithEncoding: *filename,
-	}, nil
+	downloadModel.NodeUrl = *urlToNode
+	return downloadModel, err
 }

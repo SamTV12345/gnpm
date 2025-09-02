@@ -1,5 +1,9 @@
 package http
 
+import (
+	"github.com/samtv12345/gnpm/runtimes/interfaces"
+)
+
 type NodeIndex struct {
 	Version  string      `json:"version"`
 	Date     string      `json:"date"`
@@ -13,3 +17,13 @@ type NodeIndex struct {
 	LTS      interface{} `json:"lts"`
 	Security bool        `json:"security"`
 }
+
+func (n NodeIndex) GetVersion() string {
+	return n.Version
+}
+
+func (n NodeIndex) IsLTS() bool {
+	return n.LTS != false && n.LTS != nil
+}
+
+var _ interfaces.IRuntimeVersion = (*NodeIndex)(nil)

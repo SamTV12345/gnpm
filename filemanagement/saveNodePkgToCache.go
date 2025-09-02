@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func SaveNodeJSToCacheDir(nodeData []byte, createNodeDat models.CreateNodeDownloadStruct, logger *zap.SugaredLogger) (*string, error) {
+func SaveNodeJSToCacheDir(nodeData []byte, createNodeDat models.CreateDownloadStruct, logger *zap.SugaredLogger) (*string, error) {
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func SaveNodeJSToCacheDir(nodeData []byte, createNodeDat models.CreateNodeDownlo
 	return &locationToWriteNodeJSArchive, nil
 }
 
-func HasNodeVersionInCache(downloadStruct *models.CreateNodeDownloadStruct, logger *zap.SugaredLogger) (*bool, *string, error) {
+func HasNodeVersionInCache(downloadStruct *models.CreateDownloadStruct, logger *zap.SugaredLogger) (*bool, *string, error) {
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, nil, err

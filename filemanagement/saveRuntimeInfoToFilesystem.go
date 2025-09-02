@@ -5,10 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/samtv12345/gnpm/http"
+	"github.com/samtv12345/gnpm/runtimes/impl/node/http"
+	"github.com/samtv12345/gnpm/runtimes/interfaces"
 )
 
-func SaveNodeInfoToFilesystem(nodeIndices []http.NodeIndex) error {
+func SaveNodeInfoToFilesystem[T interfaces.IRuntimeVersion](nodeIndices []T) error {
 	jsonBytes, err := json.Marshal(nodeIndices)
 	if err != nil {
 		return err
@@ -34,7 +35,7 @@ func GetCacheDir() (*string, error) {
 	return &cacheDir, nil
 }
 
-func ReadNodeInfoFromFilesystem() (*[]http.NodeIndex, error) {
+func ReadNodeInfoFromFilesystem() (*[]interfaces.IRuntimeVersion, error) {
 	cacheDir, err := GetCacheDir()
 	if err != nil {
 		return nil, err
@@ -49,5 +50,10 @@ func ReadNodeInfoFromFilesystem() (*[]http.NodeIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &nodeIndices, nil
+	converted := make([]interfaces.IRuntimeVersion, len(nodeIndices))
+	for i, v := range nodeIndices {
+		converted[i] = &v
+	}
+
+	return &converted, nil
 }

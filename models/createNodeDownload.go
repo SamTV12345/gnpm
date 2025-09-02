@@ -1,8 +1,13 @@
 package models
 
-import "github.com/samtv12345/gnpm/http"
+type CreateFilenameStruct struct {
+	Filename string
+	Sha256   string
+}
 
-type CreateNodeDownloadStruct struct {
-	NodeUrl string
-	http.NodeShasumWithEncoding
+type CreateDownloadStruct struct {
+	NodeUrl  string
+	Sha256   string
+	Filename string
+	Encoding string
 }

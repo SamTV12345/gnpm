@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func LinkPackageManager(targetPaths []string, logger *zap.SugaredLogger, detection *detection.PackageManagerDetectionResult) error {
+func LinkRequiredPaths(targetPaths []string, logger *zap.SugaredLogger, detection *detection.PackageManagerDetectionResult) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err

@@ -25,7 +25,7 @@ func main() {
 	var remainingArgs = args[1:]
 
 	// Download and link all node and pnpm versions
-	nodeTargetPath, err := gnpm.HandleNodeVersion(remainingArgs[1:], logger)
+	nodeTargetPath, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
 	if err != nil {
 		logger.Errorw("Error handling node version", "error", err)
 		return
@@ -45,7 +45,7 @@ func main() {
 
 	// Link
 	*nodeTargetPath = append(*nodeTargetPath, *pmTargetPath)
-	err = gnpm.LinkPackageManager(*nodeTargetPath, logger, packageManagerDecision)
+	err = gnpm.LinkRequiredPaths(*nodeTargetPath, logger, packageManagerDecision)
 	if err != nil {
 		logger.Errorf("Error linking package manager to %s: %s", *pmTargetPath, err)
 		return
