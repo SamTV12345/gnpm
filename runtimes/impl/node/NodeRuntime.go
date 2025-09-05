@@ -33,7 +33,7 @@ func (n Runtime) GetInformationFromPackageJSON(proposedVersion *string, path str
 	}
 
 	// Check .nvmrc first
-	nvmrcVersion, errNvmrc := packageJson.ReadNvmrc(filepath.Join(path, ".nvmrc"))
+	nvmrcVersion, errNvmrc := packageJson.ReadRuntimeVersionFile(filepath.Join(path, ".nvmrc"))
 	if errNvmrc == nil {
 		versionToDownload = &nvmrcVersion
 	}
