@@ -14,6 +14,7 @@ func FilterCorrectFilenameEnding(filenamePrefix string, shaSumsOFFiles []models.
 			return &models.CreateDownloadStruct{
 				Sha256:   file.Sha256,
 				Encoding: fileExtension,
+				Filename: file.Filename,
 			}
 		}
 	}

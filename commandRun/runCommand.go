@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func RunCommand(detectionResult detection.PackageManagerDetectionResult, remainingArgs []string, logger *zap.SugaredLogger) {
+func RunCommand(detectionResult *detection.PackageManagerDetectionResult, remainingArgs []string, logger *zap.SugaredLogger) {
 	var cmd *exec.Cmd
 
 	if remainingArgs[0] == "node" {
