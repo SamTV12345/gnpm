@@ -24,32 +24,33 @@ func main() {
 	}
 	var remainingArgs = args[1:]
 
-	// Download and link all node and pnpm versions
-	nodeTargetPath, err := gnpm.HandleNodeVersion(remainingArgs[1:], logger)
-	if err != nil {
-		logger.Errorw("Error handling node version", "error", err)
+	// Download and link all runtime and pnpm versions
+	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
+	if err != nil || selectedRuntime == nil {
+		logger.Errorw("Error handling runtime version", "error", err)
 		return
 	}
 	var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
 	if packageManagerDecision == nil {
 		logger.Info("No package manager detected")
-		return
-	}
-	logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
-	pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
-	if err != nil {
-		logger.Errorw("Error handling package manager version", "error", err)
-		return
-	}
-	logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
+	} else {
+		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
+		pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
+		if err != nil {
+			logger.Errorw("Error handling package manager version", "error", err)
+			return
+		}
+		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
 
-	// Link
-	*nodeTargetPath = append(*nodeTargetPath, *pmTargetPath)
-	err = gnpm.LinkPackageManager(*nodeTargetPath, logger, packageManagerDecision)
+		// Link
+		*runtimeTargetPath = append(*runtimeTargetPath, *pmTargetPath)
+		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
+	}
+
+	err = gnpm.LinkRequiredPaths(*runtimeTargetPath, logger, packageManagerDecision)
 	if err != nil {
-		logger.Errorf("Error linking package manager to %s: %s", *pmTargetPath, err)
+		logger.Errorf("Error linking package manager to %s", err)
 		return
 	}
-	logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
-	commandRun.RunCommand(*packageManagerDecision, remainingArgs, logger)
+	commandRun.RunCommand(packageManagerDecision, *selectedRuntime, remainingArgs, logger)
 }

@@ -21,7 +21,7 @@ func ReadPackageJson(path string) (*PackageManifest, error) {
 	return &packageJson, nil
 }
 
-func ReadNvmrc(path string) (string, error) {
+func ReadRuntimeVersionFile(path string) (string, error) {
 	var nvmrcFile, err = os.ReadFile(path)
 	if err != nil {
 		return "", err

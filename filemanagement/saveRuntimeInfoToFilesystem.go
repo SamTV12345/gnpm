@@ -1,0 +1,96 @@
+package filemanagement
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+
+	http2 "github.com/samtv12345/gnpm/runtimes/impl/bun/http"
+	"github.com/samtv12345/gnpm/runtimes/impl/node/http"
+	"github.com/samtv12345/gnpm/runtimes/interfaces"
+)
+
+func SaveNodeInfoToFilesystem[T interfaces.IRuntimeVersion](nodeIndices []T) error {
+	jsonBytes, err := json.Marshal(nodeIndices)
+	if err != nil {
+		return err
+	}
+	cacheDir, err := GetCacheDir()
+	if err != nil {
+		return err
+	}
+	pathToSaveTo := filepath.Join(*cacheDir, "nodejs_index.json")
+	return os.WriteFile(pathToSaveTo, jsonBytes, os.ModePerm)
+}
+
+func SaveBunInfoToFilesystem[T interfaces.IRuntimeVersion](nodeIndices []T) error {
+	jsonBytes, err := json.Marshal(nodeIndices)
+	if err != nil {
+		return err
+	}
+	cacheDir, err := GetCacheDir()
+	if err != nil {
+		return err
+	}
+	pathToSaveTo := filepath.Join(*cacheDir, "bun_index.json")
+	return os.WriteFile(pathToSaveTo, jsonBytes, os.ModePerm)
+}
+
+func GetCacheDir() (*string, error) {
+	dataDir, err := EnsureDataDir()
+	if err != nil {
+		return nil, err
+	}
+	cacheDir := filepath.Join(*dataDir, ".cache")
+	err = os.MkdirAll(cacheDir, os.ModePerm)
+	if err != nil && !os.IsExist(err) {
+		return nil, err
+	}
+	return &cacheDir, nil
+}
+
+func ReadNodeInfoFromFilesystem() (*[]interfaces.IRuntimeVersion, error) {
+	cacheDir, err := GetCacheDir()
+	if err != nil {
+		return nil, err
+	}
+	pathToReadFrom := filepath.Join(*cacheDir, "nodejs_index.json")
+	fileBytes, err := os.ReadFile(pathToReadFrom)
+	if err != nil {
+		return nil, err
+	}
+	var nodeIndices []http.NodeIndex
+	err = json.Unmarshal(fileBytes, &nodeIndices)
+	if err != nil {
+		return nil, err
+	}
+	converted := make([]interfaces.IRuntimeVersion, len(nodeIndices))
+	for i, v := range nodeIndices {
+		converted[i] = &v
+	}
+
+	return &converted, nil
+}
+
+func ReadBunInfoFromFilesystem() (*[]interfaces.IRuntimeVersion, error) {
+	cacheDir, err := GetCacheDir()
+	if err != nil {
+		return nil, err
+	}
+	pathToReadFrom := filepath.Join(*cacheDir, "bun_index.json")
+	fileBytes, err := os.ReadFile(pathToReadFrom)
+	if err != nil {
+		return nil, err
+	}
+	var nodeIndices []http2.BunIndex
+	err = json.Unmarshal(fileBytes, &nodeIndices)
+	if err != nil {
+		return nil, err
+	}
+	converted := make([]interfaces.IRuntimeVersion, len(nodeIndices))
+	for i, v := range nodeIndices {
+		converted[i] = &v
+	}
+
+	return &converted, nil
+}
