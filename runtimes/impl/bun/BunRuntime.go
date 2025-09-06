@@ -25,6 +25,11 @@ type Runtime struct {
 	Logger *zap.SugaredLogger
 }
 
+func (r Runtime) GetVersionedFilename(version string, filename string) string {
+	filename = strings.Replace(filename, "bun", "bun-v"+version, 1)
+	return filename
+}
+
 func (r Runtime) GetRuntimeName() string {
 	return "bun"
 }
@@ -68,6 +73,12 @@ func (r Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameS
 	}
 
 	shasums := http3.DecodeShasumTxt(string(shasumData))
+	for i, shasum := range shasums {
+		if strings.Contains(shasum.Filename, "profile") {
+			shasums = append(shasums[:i], shasums[i+1:]...)
+			continue
+		}
+	}
 	return &shasums, nil
 }
 

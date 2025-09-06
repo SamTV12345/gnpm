@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/samtv12345/gnpm/models"
+	"github.com/samtv12345/gnpm/runtimes/interfaces"
 	"go.uber.org/zap"
 )
 
@@ -27,10 +28,13 @@ func SaveNodeJSToCacheDir(nodeData []byte, createNodeDat models.CreateDownloadSt
 	return &locationToWriteNodeJSArchive, nil
 }
 
-func HasNodeVersionInCache(downloadStruct *models.CreateDownloadStruct, logger *zap.SugaredLogger) (*bool, *string, error) {
+func HasNodeVersionInCache(downloadStruct *models.CreateDownloadStruct, logger *zap.SugaredLogger, runtime *interfaces.IRuntime, versionToDownload interfaces.IRuntimeVersion) (*bool, *string, error) {
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, nil, err
+	}
+	if runtime != nil {
+		downloadStruct.Filename = (*runtime).GetVersionedFilename(versionToDownload.GetVersion(), downloadStruct.Filename)
 	}
 	cacheFileOfNodeJs := filepath.Join(*dataDir, ".cache", downloadStruct.Filename)
 	logger.Debugf("Checking if Node.js exists at: %s", cacheFileOfNodeJs)

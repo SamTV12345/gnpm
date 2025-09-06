@@ -10,6 +10,11 @@ type Runtime struct {
 	Logger *zap.SugaredLogger
 }
 
+func (r Runtime) GetVersionedFilename(version string, filename string) string {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (r Runtime) GetRuntimeName() string {
 	return "deno"
 }

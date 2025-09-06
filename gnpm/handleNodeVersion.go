@@ -14,18 +14,18 @@ import (
 	"go.uber.org/zap"
 )
 
-func createRelevantNodePaths(targetPath string) []string {
+func createRelevantNodePaths(targetPath string, selectedRuntime interfaces.IRuntime) []string {
 	if runtime.GOOS == "windows" {
-		nodePath := filepath.Join(targetPath, "node.exe")
+		nodePath := filepath.Join(targetPath, selectedRuntime.GetRuntimeName()+".exe")
 		return []string{nodePath}
 	}
 
 	if runtime.GOOS == "linux" {
-		nodePath := filepath.Join(targetPath, "bin", "node")
+		nodePath := filepath.Join(targetPath, "bin", selectedRuntime.GetRuntimeName())
 		return []string{nodePath}
 	}
 
-	var nodePath = filepath.Join(targetPath, "node")
+	var nodePath = filepath.Join(targetPath, selectedRuntime.GetRuntimeName())
 	return []string{nodePath}
 }
 
@@ -51,7 +51,7 @@ func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (relevantPat
 		return nil, nil, err
 	}
 	logger.Debugf("Node.js download URL: %s", createNodeDownloadUrlInfo.NodeUrl)
-	exists, filename, err := filemanagement.HasNodeVersionInCache(createNodeDownloadUrlInfo, logger)
+	exists, filename, err := filemanagement.HasNodeVersionInCache(createNodeDownloadUrlInfo, logger, &selectedRuntime, *nodeVersionToDownload)
 	if err != nil {
 		logger.Errorw("Error checking Node.js cache", "error", err)
 		return nil, nil, err
@@ -85,7 +85,7 @@ func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (relevantPat
 
 	if filemanagement.HasArchiveBeenExtracted(*targetPath) {
 		logger.Debugf("Node.js version %s already extracted at: %s", (*nodeVersionToDownload).GetVersion(), *targetPath)
-		relevantPaths := createRelevantNodePaths(*targetPath)
+		relevantPaths := createRelevantNodePaths(*targetPath, selectedRuntime)
 		selectedRuntimeFor = &selectedRuntime
 		return &relevantPaths, selectedRuntimeFor, nil
 	} else {
@@ -97,7 +97,7 @@ func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (relevantPat
 		}
 		logger.Debugf("Node.js extracted to: %s", *targetLocation)
 	}
-	relevantPaths := createRelevantNodePaths(*targetPath)
+	relevantPaths := createRelevantNodePaths(*targetPath, selectedRuntime)
 	return &relevantPaths, selectedRuntimeFor, nil
 }
 

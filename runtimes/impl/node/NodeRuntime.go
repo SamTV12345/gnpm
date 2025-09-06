@@ -26,6 +26,10 @@ type Runtime struct {
 	Logger *zap.SugaredLogger
 }
 
+func (n Runtime) GetVersionedFilename(_ string, filename string) string {
+	return filename
+}
+
 func (n Runtime) GetRuntimeName() string {
 	return "node"
 }

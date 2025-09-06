@@ -11,6 +11,7 @@ type IRuntimeVersion interface {
 
 type IRuntime interface {
 	GetRuntimeName() string
+	GetVersionedFilename(version string, filename string) string
 	GetAllVersionsOfRuntime() (*[]IRuntimeVersion, error)
 	GetInformationFromPackageJSON(proposedVersion *string, path string, versions *[]IRuntimeVersion) (*IRuntimeVersion, error)
 	ToDownloadUrl(filenamePrefix string, shaSumOFFiles []models.CreateFilenameStruct, version string) (*string, error)
