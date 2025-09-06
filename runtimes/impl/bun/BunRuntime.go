@@ -74,7 +74,7 @@ func (r Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameS
 
 	shasums := http3.DecodeShasumTxt(string(shasumData))
 	for i, shasum := range shasums {
-		if strings.Contains(shasum.Filename, "profile") {
+		if strings.Contains(shasum.Filename, "profile") || strings.Contains(shasum.Filename, "baseline") {
 			shasums = append(shasums[:i], shasums[i+1:]...)
 			continue
 		}

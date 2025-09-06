@@ -6,8 +6,8 @@ type CreateFilenameStruct struct {
 }
 
 type CreateDownloadStruct struct {
-	NodeUrl  string
-	Sha256   string
-	Filename string
-	Encoding string
+	RuntimeUrl string
+	Sha256     string
+	Filename   string
+	Encoding   string
 }

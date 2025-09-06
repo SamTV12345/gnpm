@@ -24,10 +24,10 @@ func main() {
 	}
 	var remainingArgs = args[1:]
 
-	// Download and link all node and pnpm versions
-	nodeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
+	// Download and link all runtime and pnpm versions
+	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
 	if err != nil || selectedRuntime == nil {
-		logger.Errorw("Error handling node version", "error", err)
+		logger.Errorw("Error handling runtime version", "error", err)
 		return
 	}
 	var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
@@ -43,11 +43,11 @@ func main() {
 		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
 
 		// Link
-		*nodeTargetPath = append(*nodeTargetPath, *pmTargetPath)
+		*runtimeTargetPath = append(*runtimeTargetPath, *pmTargetPath)
 		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
 	}
 
-	err = gnpm.LinkRequiredPaths(*nodeTargetPath, logger, packageManagerDecision)
+	err = gnpm.LinkRequiredPaths(*runtimeTargetPath, logger, packageManagerDecision)
 	if err != nil {
 		logger.Errorf("Error linking package manager to %s", err)
 		return
