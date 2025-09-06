@@ -44,7 +44,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: dist/*
-          tag: "snapshot-${{ github.run_id }}"
+          tag: "release-9999"
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: true
