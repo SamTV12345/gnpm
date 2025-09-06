@@ -23,16 +23,6 @@ var INSTALL_METADATA = map[string]string{
 	"bun.lockb":                       "bun",
 }
 
-var INSTALL_PACKAGE = map[string]string{
-	"bun":        "https://bun.sh",
-	"deno":       "https://deno.com",
-	"pnpm":       "https://pnpm.io/installation",
-	"pnpm@6":     "https://pnpm.io/6.x/installation",
-	"yarn":       "https://classic.yarnpkg.com/en/docs/install",
-	"yarn@berry": "https://yarnpkg.com/getting-started/install",
-	"npm":        "https://docs.npmjs.com/cli/configuring-npm/install",
-}
-
 type AgentName string
 
 const AgentNameNpm = "npm"

@@ -3,9 +3,15 @@ package deno
 import (
 	"github.com/samtv12345/gnpm/models"
 	"github.com/samtv12345/gnpm/runtimes/interfaces"
+	"go.uber.org/zap"
 )
 
 type Runtime struct {
+	Logger *zap.SugaredLogger
+}
+
+func (r Runtime) GetRuntimeName() string {
+	return "deno"
 }
 
 func (r Runtime) ToDownloadUrl(filenamePrefix string, shaSumOFFiles []models.CreateFilenameStruct, version string) (*string, error) {

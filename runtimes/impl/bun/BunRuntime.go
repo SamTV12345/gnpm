@@ -2,15 +2,21 @@ package bun
 
 import (
 	"errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/samtv12345/gnpm/archive"
 	"github.com/samtv12345/gnpm/filemanagement"
+	http3 "github.com/samtv12345/gnpm/http"
 	"github.com/samtv12345/gnpm/models"
 	"github.com/samtv12345/gnpm/packageJson"
-	"github.com/samtv12345/gnpm/runtimes/impl/node/http"
+	http2 "github.com/samtv12345/gnpm/runtimes/impl/bun/http"
 	"github.com/samtv12345/gnpm/runtimes/interfaces"
 	"go.uber.org/zap"
 )
@@ -19,19 +25,50 @@ type Runtime struct {
 	Logger *zap.SugaredLogger
 }
 
-func (r Runtime) ToDownloadUrl(filenamePrefix string, shaSumOFFiles []models.CreateFilenameStruct, version string) (*string, error) {
-	//TODO implement me
-	panic("implement me")
+func (r Runtime) GetRuntimeName() string {
+	return "bun"
 }
 
-func (r Runtime) GetFilenamePrefix(version string) string {
-	//TODO implement me
-	panic("implement me")
+func (r Runtime) ToDownloadUrl(filenamePrefix string, shaSumOFFiles []models.CreateFilenameStruct, version string) (*string, error) {
+	filename := archive.FilterCorrectFilenameEnding(filenamePrefix, shaSumOFFiles)
+	if filename == nil {
+		r.Logger.Errorw("Error finding correct Node.js binary for your platform", "error")
+		return nil, errors.New("error finding correct Node.js binary for your platform")
+	}
+
+	urlToNode := "https://github.com/oven-sh/bun/releases/download/bun-v" + version + "/" + filename.Filename
+
+	return &urlToNode, nil
+}
+
+// GetFilenamePrefix bun does not use the version in the filename
+func (r Runtime) GetFilenamePrefix(_ string) string {
+	operatingSystem := runtime.GOOS
+	architecture := runtime.GOARCH
+
+	if strings.Contains(architecture, "amd") {
+		architecture = strings.Replace(architecture, "amd", "x", 1)
+	}
+
+	return "bun-" + operatingSystem + "-" + architecture
+
 }
 
 func (r Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameStruct, error) {
-	//TODO implement me
-	panic("implement me")
+	response, err := http.Get("https://github.com/oven-sh/bun/releases/download/bun-v" + version + "/SHASUMS256.txt")
+	if err != nil {
+		r.Logger.Error("Error fetching SHASUMS256.txt:", err)
+		return nil, err
+	}
+	defer response.Body.Close()
+	shasumData, err := io.ReadAll(response.Body)
+	if err != nil {
+		r.Logger.Error("Error reading SHASUMS256.txt:", err)
+		return nil, err
+	}
+
+	shasums := http3.DecodeShasumTxt(string(shasumData))
+	return &shasums, nil
 }
 
 func (r Runtime) GetInformationFromPackageJSON(proposedVersion *string, path string, versions *[]interfaces.IRuntimeVersion) (*interfaces.IRuntimeVersion, error) {
@@ -40,10 +77,10 @@ func (r Runtime) GetInformationFromPackageJSON(proposedVersion *string, path str
 	if err != nil {
 		return nil, err
 	}
-	// Check .nvmrc first
-	nvmrcVersion, errNvmrc := packageJson.ReadRuntimeVersionFile(filepath.Join(path, ".bun-version"))
+	// Check .bun-version first
+	bunvmRC, errNvmrc := packageJson.ReadRuntimeVersionFile(filepath.Join(path, ".bun-version"))
 	if errNvmrc == nil {
-		versionToDownload = &nvmrcVersion
+		versionToDownload = &bunvmRC
 	}
 
 	// Then check the package.json "engines" field
@@ -63,9 +100,9 @@ func (r Runtime) GetInformationFromPackageJSON(proposedVersion *string, path str
 
 		var possibleVersions = make([]*semver.Version, 0)
 		for _, nodeVersion := range *versions {
-			v, err := semver.NewVersion(nodeVersion.GetVersion()[1:])
+			v, err := semver.NewVersion(nodeVersion.GetVersion())
 			if err != nil {
-				r.Logger.Errorw("Error parsing version", "error", err)
+				r.Logger.Errorw("Error parsing version", "error", err, nodeVersion.GetVersion())
 				continue
 			}
 			if constraints.Check(v) {
@@ -92,7 +129,7 @@ func (r Runtime) GetInformationFromPackageJSON(proposedVersion *string, path str
 	}
 
 	if versionToDownload == nil {
-		return nil, errors.New("error finding a suitable Node.js version")
+		return nil, errors.New("error finding a suitable bun version")
 	}
 
 	for _, nodeVersion := range *versions {
@@ -100,7 +137,7 @@ func (r Runtime) GetInformationFromPackageJSON(proposedVersion *string, path str
 			return &nodeVersion, nil
 		}
 	}
-	return nil, errors.New("error finding a suitable Node.js version")
+	return nil, errors.New("error finding a suitable Bun version")
 }
 
 func (r Runtime) GetAllVersionsOfRuntime() (*[]interfaces.IRuntimeVersion, error) {
@@ -108,14 +145,14 @@ func (r Runtime) GetAllVersionsOfRuntime() (*[]interfaces.IRuntimeVersion, error
 	if err != nil {
 		return nil, err
 	}
-	nodeJSCacheFile := filepath.Join(*dataDir, ".cache", "nodejs_index.json")
+	nodeJSCacheFile := filepath.Join(*dataDir, ".cache", "bun_index.json")
 	fsInfo, err := os.Stat(nodeJSCacheFile)
 	if os.IsNotExist(err) || fsInfo.Size() == 0 {
-		nodeVersions, err := http.GetNodeJsVersion(r.Logger)
+		nodeVersions, err := http2.GetBunVersions(r.Logger)
 		if err != nil {
 			return nil, err
 		}
-		err = filemanagement.SaveNodeInfoToFilesystem(*nodeVersions)
+		err = filemanagement.SaveBunInfoToFilesystem(*nodeVersions)
 		if err != nil {
 			return nil, err
 		}
@@ -127,11 +164,11 @@ func (r Runtime) GetAllVersionsOfRuntime() (*[]interfaces.IRuntimeVersion, error
 		return &converted, nil
 	}
 
-	nodeVersions, err := filemanagement.ReadNodeInfoFromFilesystem()
+	bunVersions, err := filemanagement.ReadBunInfoFromFilesystem()
 	if err != nil {
 		return nil, err
 	}
-	return nodeVersions, nil
+	return bunVersions, nil
 }
 
 var _ interfaces.IRuntime = (*Runtime)(nil)

@@ -14,6 +14,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/samtv12345/gnpm/archive"
 	"github.com/samtv12345/gnpm/filemanagement"
+	http3 "github.com/samtv12345/gnpm/http"
 	"github.com/samtv12345/gnpm/models"
 	"github.com/samtv12345/gnpm/packageJson"
 	"github.com/samtv12345/gnpm/runtimes/impl/node/http"
@@ -23,6 +24,10 @@ import (
 
 type Runtime struct {
 	Logger *zap.SugaredLogger
+}
+
+func (n Runtime) GetRuntimeName() string {
+	return "node"
 }
 
 func (n Runtime) GetInformationFromPackageJSON(proposedVersion *string, path string, nodeVersions *[]interfaces.IRuntimeVersion) (*interfaces.IRuntimeVersion, error) {
@@ -167,19 +172,8 @@ func (n Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameS
 		return nil, err
 	}
 
-	var shaSumData = string(shasumData)
-	var shaSumToFileMappingArr = make([]models.CreateFilenameStruct, 0)
-	splittedShaSumData := strings.Split(shaSumData, "\n")
-	for _, line := range splittedShaSumData {
-		shaSumToFileMapping := strings.Split(line, "  ")
-		if len(shaSumToFileMapping) == 2 {
-			shaSumToFileMappingArr = append(shaSumToFileMappingArr, models.CreateFilenameStruct{
-				Sha256:   shaSumToFileMapping[0],
-				Filename: shaSumToFileMapping[1],
-			})
-		}
-	}
-	return &shaSumToFileMappingArr, nil
+	shasums := http3.DecodeShasumTxt(string(shasumData))
+	return &shasums, nil
 }
 
 var _ interfaces.IRuntime = (*Runtime)(nil)

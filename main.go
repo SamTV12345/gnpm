@@ -25,8 +25,8 @@ func main() {
 	var remainingArgs = args[1:]
 
 	// Download and link all node and pnpm versions
-	nodeTargetPath, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
-	if err != nil {
+	nodeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
+	if err != nil || selectedRuntime == nil {
 		logger.Errorw("Error handling node version", "error", err)
 		return
 	}
@@ -52,5 +52,5 @@ func main() {
 		logger.Errorf("Error linking package manager to %s", err)
 		return
 	}
-	commandRun.RunCommand(packageManagerDecision, remainingArgs, logger)
+	commandRun.RunCommand(packageManagerDecision, *selectedRuntime, remainingArgs, logger)
 }
