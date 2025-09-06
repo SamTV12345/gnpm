@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/samtv12345/gnpm/archive"
+	"github.com/samtv12345/gnpm/caching"
 	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/http"
 	"github.com/samtv12345/gnpm/models"
@@ -103,7 +104,7 @@ func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (relevantPat
 }
 
 func createDownloadUrl(runtimeVersionToDownload interfaces.IRuntimeVersion, runtime interfaces.IRuntime, logger *zap.SugaredLogger) (*models.CreateDownloadStruct, error) {
-	shaSumsOFFiles, err := runtime.GetShaSumsForRuntime(runtimeVersionToDownload.GetVersion())
+	shaSumsOFFiles, err := caching.GetShaSumCacheInPath(runtime, runtimeVersionToDownload.GetVersion())
 
 	if err != nil {
 		logger.Errorw("Error fetching SHASUMS256.txt", "error", err)

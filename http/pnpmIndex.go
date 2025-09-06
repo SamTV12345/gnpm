@@ -6,6 +6,7 @@ type PnpmIndex struct {
 
 type Asset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
+	Name               string `json:"name"`
 	Digest             string `json:"digest"`
 }
 
