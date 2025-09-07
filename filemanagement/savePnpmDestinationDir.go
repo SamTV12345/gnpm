@@ -5,11 +5,12 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/samtv12345/gnpm/http"
+	http2 "github.com/samtv12345/gnpm/pm/impl/pnpm/http"
+	"github.com/samtv12345/gnpm/pm/interfaces"
 	"go.uber.org/zap"
 )
 
-func SavePnpmToInstallDir(result *http.DownloadPnpmReleaseResult, logger *zap.SugaredLogger, version string) (*string, error) {
+func SavePnpmToInstallDir(result *http2.DownloadReleaseResult, logger *zap.SugaredLogger, version string, pm interfaces.IPackageManager) (*string, error) {
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, err
@@ -25,7 +26,7 @@ func SavePnpmToInstallDir(result *http.DownloadPnpmReleaseResult, logger *zap.Su
 		return nil, err
 	}
 
-	locationToWritePnpm := filepath.Join(gnpmDir, "pnpm-"+version)
+	locationToWritePnpm := filepath.Join(gnpmDir, pm.GetName()+"-"+version)
 	_, err = os.Stat(locationToWritePnpm)
 	if os.IsNotExist(err) {
 		err = os.Mkdir(locationToWritePnpm, os.ModePerm)
@@ -71,7 +72,7 @@ func buildPnpmFilename() string {
 	return filePrefix + fileSuffix
 }
 
-func IsPnpmVersionInInstallDir(version string) (*bool, *string, error) {
+func IsPackageManagerInstalled(version string, pmManager interfaces.IPackageManager) (*bool, *string, error) {
 	if version == "*" {
 		return &[]bool{false}[0], nil, nil
 	}
@@ -79,7 +80,7 @@ func IsPnpmVersionInInstallDir(version string) (*bool, *string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	locationToCheck := filepath.Join(*dataDir, "_gnpm", "pnpm-"+version)
+	locationToCheck := filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version)
 	_, err = os.Stat(locationToCheck)
 
 	if os.IsNotExist(err) {
@@ -91,7 +92,7 @@ func IsPnpmVersionInInstallDir(version string) (*bool, *string, error) {
 	}
 
 	filenameInPnpmDir := buildPnpmFilename()
-	locationToCheck = filepath.Join(*dataDir, "_gnpm", "pnpm-"+version, filenameInPnpmDir)
+	locationToCheck = filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version, filenameInPnpmDir)
 	_, err = os.Stat(locationToCheck)
 
 	if os.IsNotExist(err) {

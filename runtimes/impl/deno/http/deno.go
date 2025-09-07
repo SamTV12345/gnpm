@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func GetDenoGitHubRelease(version string, logger *zap.SugaredLogger) (*http2.PnpmRelease, error) {
+func GetDenoGitHubRelease(version string, logger *zap.SugaredLogger) (*http2.GitHubRelease, error) {
 	response, err := http.Get("https://api.github.com/repos/denoland/deno/releases/tags/v" + version)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func GetDenoGitHubRelease(version string, logger *zap.SugaredLogger) (*http2.Pnp
 		return nil, err
 	}
 
-	var denoRelease http2.PnpmRelease
+	var denoRelease http2.GitHubRelease
 	if err := json.Unmarshal(shasumData, &denoRelease); err != nil {
 		logger.Error("Error unmarshalling SHASUMS256.txt:", err)
 		return nil, err

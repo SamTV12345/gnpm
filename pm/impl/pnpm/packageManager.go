@@ -1,19 +1,34 @@
-package http
+package pnpm
 
 import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
+	http2 "net/http"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/samtv12345/gnpm/http"
+	http3 "github.com/samtv12345/gnpm/pm/impl/pnpm/http"
+	"github.com/samtv12345/gnpm/pm/interfaces"
 	"go.uber.org/zap"
 )
 
-func GetAllVersionsOfPnpm() (*[]string, error) {
-	data, err := http.Get("https://registry.npmjs.org/pnpm?fields=versions")
+type Pnpm struct {
+	Logger *zap.SugaredLogger
+}
+
+func (p Pnpm) GetVersionFileName() string {
+	return "pnpm.json"
+}
+
+func (p Pnpm) GetName() string {
+	return "pnpm"
+}
+
+func (p Pnpm) GetAllVersions() (*[]string, error) {
+	data, err := http2.Get("https://registry.npmjs.org/pnpm?fields=versions")
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +38,7 @@ func GetAllVersionsOfPnpm() (*[]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var pnpmIndex PnpmIndex
+	var pnpmIndex http.GithubIndex
 	if err := json.Unmarshal(readBytes, &pnpmIndex); err != nil {
 		return nil, err
 	}
@@ -34,13 +49,8 @@ func GetAllVersionsOfPnpm() (*[]string, error) {
 	return &versions, nil
 }
 
-type DownloadPnpmReleaseResult struct {
-	Filename string
-	Content  []byte
-}
-
-func DownloadPnpmRelease(version string, logger *zap.SugaredLogger) (*DownloadPnpmReleaseResult, error) {
-	specificRelease, err := getSpecificReleaseOfPnpm(version)
+func (p Pnpm) DownloadRelease(version string) (*http3.DownloadReleaseResult, error) {
+	specificRelease, err := http3.GetSpecificReleaseOfPnpm(version)
 	if err != nil {
 		return nil, err
 	}
@@ -69,26 +79,14 @@ func DownloadPnpmRelease(version string, logger *zap.SugaredLogger) (*DownloadPn
 		return nil, errors.New("no compatible pnpm binary found for your platform")
 	}
 
-	downloadedPnpmRelease, err := DownloadFile(url, &shasum, logger, "Downloading pnpm")
+	downloadedPnpmRelease, err := http.DownloadFile(url, &shasum, p.Logger, "Downloading pnpm", nil)
 	if err != nil {
 		return nil, err
 	}
-	return &DownloadPnpmReleaseResult{
+	return &http3.DownloadReleaseResult{
 		Filename: filepath.Base(url),
 		Content:  downloadedPnpmRelease,
 	}, nil
 }
 
-func getSpecificReleaseOfPnpm(version string) (*PnpmRelease, error) {
-	data, err := http.Get("https://api.github.com/repos/pnpm/pnpm/releases/tags/v" + version)
-	if err != nil {
-		return nil, err
-	}
-	var release PnpmRelease
-	defer data.Body.Close()
-	readBytes, err := io.ReadAll(data.Body)
-	if err := json.Unmarshal(readBytes, &release); err != nil {
-		return nil, err
-	}
-	return &release, nil
-}
+var _ interfaces.IPackageManager = (*Pnpm)(nil)

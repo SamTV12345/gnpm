@@ -8,6 +8,7 @@ type CreateFilenameStruct struct {
 type CreateDownloadStruct struct {
 	RuntimeUrl string
 	Sha256     string
+	Sha512     string
 	Filename   string
 	Encoding   string
 }
