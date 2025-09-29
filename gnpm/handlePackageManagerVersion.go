@@ -51,7 +51,7 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 		logger.Infof("pnpm version %s is already installed in %s", *result.Version, *targetPath)
 		return targetPath, nil
 	} else {
-		logger.Infof("Selected pnpm version: %s", selectedVersion.String())
+		logger.Infof("Selected %s version: %s", result.Name, selectedVersion.String())
 		release, err := pmManager.DownloadRelease(selectedVersion.String())
 		if err != nil {
 			logger.Warnf("Error getting release of pnpm: %v", err)
