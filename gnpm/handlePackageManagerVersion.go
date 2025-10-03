@@ -14,13 +14,13 @@ import (
 
 func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) (*[]string, error) {
 	pmManager := pm.GetPackageManagerSelection(result.Name, logger)
-	// Get all available pnpm versions
-	pnpmVersions := caching.GetPmVersion(logger, pmManager)
-	vs := make([]*semver.Version, len(pnpmVersions))
-	for i, v := range pnpmVersions {
+	// Get all available pm versions
+	pmVersions := caching.GetPmVersion(logger, pmManager)
+	vs := make([]*semver.Version, len(pmVersions))
+	for i, v := range pmVersions {
 		version, err := semver.NewVersion(v)
 		if err != nil {
-			logger.Warnf("Error parsing pnpm version %s: %v", v, err)
+			logger.Warnf("Error parsing %s version %s: %v", pmManager.GetName(), v, err)
 			continue
 		}
 		vs[i] = version
@@ -44,29 +44,29 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 	selectedVersion := matchedVersions[len(matchedVersions)-1]
 	isInstalled, targetPath, err := filemanagement.IsPackageManagerInstalled(selectedVersion.String(), pmManager)
 	if err != nil {
-		logger.Warnf("Error checking if pnpm version is installed: %v", err)
+		logger.Warnf("Error checking if %s version is installed: %v", pmManager.GetName(), err)
 		return nil, err
 	}
 	if *isInstalled && targetPath != nil {
-		logger.Infof("pnpm version %s is already installed in %s", *result.Version, *targetPath)
+		logger.Infof("%s version %s is already installed in %s", pmManager.GetName(), *result.Version, *targetPath)
 		var pmPaths = pmManager.GetAllPathsToLink(*targetPath)
 		return &pmPaths, nil
 	} else {
 		logger.Infof("Selected %s version: %s", result.Name, selectedVersion.String())
 		release, err := pmManager.DownloadRelease(selectedVersion.String())
 		if err != nil {
-			logger.Warnf("Error getting release of pnpm: %v", err)
+			logger.Warnf("Error getting release of %s: %v", pmManager.GetName(), err)
 			return nil, err
 		}
 		targetPath, err = filemanagement.SavePackageManager(release, logger, selectedVersion.String(), pmManager)
 		if err != nil {
-			logger.Warnf("Error saving pnpm to install dir: %v", err)
+			logger.Warnf("Error saving %s to install dir: %v", pmManager.GetName(), err)
 			return nil, err
 		}
 		logger.Infof("Installed %s version %s in %s", result.Name, selectedVersion.String(), *targetPath)
 		targetPath, err = pmManager.ExtractToFilesystem(*targetPath)
 		if err != nil {
-			logger.Warnf("Error extracting pnpm to filesystem: %v", err)
+			logger.Warnf("Error extracting %s to filesystem: %v", pmManager.GetName(), err)
 			return nil, err
 		}
 

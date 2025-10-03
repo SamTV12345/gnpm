@@ -111,11 +111,11 @@ func (n Npm) GetAllVersions() (*[]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var pnpmIndex http.GithubIndex
-	if err := json.Unmarshal(readBytes, &pnpmIndex); err != nil {
+	var npmIndex http.GithubIndex
+	if err := json.Unmarshal(readBytes, &npmIndex); err != nil {
 		return nil, err
 	}
-	for version := range pnpmIndex.Versions {
+	for version := range npmIndex.Versions {
 		versions = append(versions, version)
 	}
 

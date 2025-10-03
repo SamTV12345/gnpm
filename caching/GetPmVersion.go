@@ -22,12 +22,12 @@ func GetPmVersion(logger *zap.SugaredLogger, pm interfaces.IPackageManager) []st
 	if os.IsNotExist(err) || fsInfo.Size() == 0 {
 		pnpmVersion, err := pm.GetAllVersions()
 		if err != nil {
-			logger.Warnf("Error fetching pnpm versions: %v", err)
+			logger.Warnf("Error fetching %s versions: %v", pm.GetName(), err)
 			return []string{}
 		}
-		err = filemanagement.SavePnpmInfoToFilesystem(*pnpmVersion)
+		err = filemanagement.SavePnpmInfoToFilesystem(*pnpmVersion, pm)
 		if err != nil {
-			logger.Warnf("Error saving pnpm versions to filesystem: %v", err)
+			logger.Warnf("Error saving %s versions to filesystem: %v", pm.GetName(), err)
 			return []string{}
 		}
 		return *pnpmVersion
