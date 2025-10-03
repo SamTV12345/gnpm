@@ -44,7 +44,6 @@ func main() {
 
 		// Link
 		*runtimeTargetPath = append(*runtimeTargetPath, *pmTargetPath...)
-		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
 	}
 
 	err = gnpm.LinkRequiredPaths(*runtimeTargetPath, logger, packageManagerDecision)
