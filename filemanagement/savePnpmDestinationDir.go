@@ -77,25 +77,20 @@ func IsPackageManagerInstalled(version string, pmManager interfaces.IPackageMana
 		return nil, nil, err
 	}
 	locationToCheck := filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version)
+	locationToCheck2 := filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version+".exe")
 	_, err = os.Stat(locationToCheck)
+	_, err2 := os.Stat(locationToCheck2)
 
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) && os.IsNotExist(err2) {
 		var falseVal = false
 		return &falseVal, nil, nil
 	}
-	if err != nil {
+	if err != nil && err2 != nil {
 		return nil, nil, err
 	}
 
-	locationToCheck = filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version)
-	_, err = os.Stat(locationToCheck)
-
-	if os.IsNotExist(err) {
-		var falseVal = false
-		return &falseVal, nil, nil
-	}
 	if err != nil {
-		return nil, nil, err
+		locationToCheck = locationToCheck2
 	}
 
 	return &[]bool{true}[0], &locationToCheck, nil

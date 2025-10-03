@@ -5,10 +5,12 @@ import (
 	"errors"
 	"io"
 	http2 "net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/http"
 	http3 "github.com/samtv12345/gnpm/pm/impl/pnpm/http"
 	"github.com/samtv12345/gnpm/pm/interfaces"
@@ -20,11 +22,35 @@ type Pnpm struct {
 }
 
 func (p Pnpm) ExtractToFilesystem(targetPath string) (*string, error) {
+	dataDir, err := filemanagement.EnsureDataDir()
+	if err != nil {
+		return nil, err
+	}
+	filename := filepath.Base(targetPath)
+	linkPnpm := filepath.Join(*dataDir, "_gnpm", filename)
+	if err := os.Symlink(targetPath, linkPnpm); err != nil {
+		return nil, err
+	}
 	return &targetPath, nil
 }
 
+func getPnpmFilename() string {
+	operatingSystem := runtime.GOOS
+	if operatingSystem == "windows" {
+		return "pnpm.exe"
+	}
+	return "pnpm"
+}
+
 func (p Pnpm) GetAllPathsToLink(targetPath string) []string {
-	return []string{targetPath}
+	targetPathForNameWithoutVersion := filepath.Join(filepath.Dir(targetPath), getPnpmFilename())
+	_, err := os.Stat(targetPathForNameWithoutVersion)
+	if os.IsNotExist(err) {
+		if err := os.Symlink(targetPath, targetPathForNameWithoutVersion); err != nil {
+			p.Logger.Warnw("Error creating symlink for pnpm", "error", err)
+		}
+	}
+	return []string{targetPathForNameWithoutVersion}
 }
 
 func (p Pnpm) GetVersionFileName() string {
