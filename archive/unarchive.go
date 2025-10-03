@@ -10,7 +10,7 @@ func UnarchiveFile(path string, logger *zap.SugaredLogger) (*string, error) {
 	var extension = filepath.Ext(path)
 	if extension == ".zip" {
 		return unzip(path, logger)
-	} else if extension == ".gz" {
+	} else if extension == ".gz" || extension == ".tgz" {
 		return untar(path, logger)
 	} else {
 		panic("Unrecognized file extension " + extension)

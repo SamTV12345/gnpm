@@ -19,6 +19,14 @@ type Pnpm struct {
 	Logger *zap.SugaredLogger
 }
 
+func (p Pnpm) ExtractToFilesystem(targetPath string) (*string, error) {
+	return &targetPath, nil
+}
+
+func (p Pnpm) GetAllPathsToLink(targetPath string) []string {
+	return []string{targetPath}
+}
+
 func (p Pnpm) GetVersionFileName() string {
 	return "pnpm.json"
 }

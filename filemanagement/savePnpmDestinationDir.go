@@ -10,12 +10,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func SavePnpmToInstallDir(result *http2.DownloadReleaseResult, logger *zap.SugaredLogger, version string, pm interfaces.IPackageManager) (*string, error) {
+func SavePackageManager(result *http2.DownloadReleaseResult, logger *zap.SugaredLogger, version string, pm interfaces.IPackageManager) (*string, error) {
 	dataDir, err := EnsureDataDir()
 	if err != nil {
 		return nil, err
 	}
-	gnpmDir := filepath.Join(*dataDir, "_gnpm")
+	gnpmDir := filepath.Join(*dataDir, ".cache")
 	_, err = os.Stat(gnpmDir)
 	if os.IsNotExist(err) {
 		err = os.Mkdir(gnpmDir, os.ModePerm)
@@ -26,19 +26,15 @@ func SavePnpmToInstallDir(result *http2.DownloadReleaseResult, logger *zap.Sugar
 		return nil, err
 	}
 
-	locationToWritePnpm := filepath.Join(gnpmDir, pm.GetName()+"-"+version)
+	locationToWritePnpm := filepath.Join(gnpmDir, pm.GetName()+"-"+version+filepath.Ext(result.Filename))
 	_, err = os.Stat(locationToWritePnpm)
 	if os.IsNotExist(err) {
-		err = os.Mkdir(locationToWritePnpm, os.ModePerm)
-		if err != nil {
-			return nil, err
-		}
 	} else if err != nil {
 		return nil, err
 	}
 
 	logger.Debugf("Saving pnpm to cache at location: %s with name %s", locationToWritePnpm, result.Filename)
-	err = os.WriteFile(filepath.Join(locationToWritePnpm, result.Filename), result.Content, 0644)
+	err = os.WriteFile(locationToWritePnpm, result.Content, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +87,7 @@ func IsPackageManagerInstalled(version string, pmManager interfaces.IPackageMana
 		return nil, nil, err
 	}
 
-	filenameInPnpmDir := buildPnpmFilename()
-	locationToCheck = filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version, filenameInPnpmDir)
+	locationToCheck = filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version)
 	_, err = os.Stat(locationToCheck)
 
 	if os.IsNotExist(err) {

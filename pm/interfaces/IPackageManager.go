@@ -9,4 +9,6 @@ type IPackageManager interface {
 	GetName() string
 	GetAllVersions() (*[]string, error)
 	DownloadRelease(version string) (*http2.DownloadReleaseResult, error)
+	GetAllPathsToLink(targetPath string) []string
+	ExtractToFilesystem(targetPath string) (*string, error)
 }

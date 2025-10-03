@@ -12,10 +12,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) (*string, error) {
+func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) (*[]string, error) {
 	pmManager := pm.GetPackageManagerSelection(result.Name, logger)
 	// Get all available pnpm versions
-	pnpmVersions := caching.GetPnpmVersion(logger, pmManager)
+	pnpmVersions := caching.GetPmVersion(logger, pmManager)
 	vs := make([]*semver.Version, len(pnpmVersions))
 	for i, v := range pnpmVersions {
 		version, err := semver.NewVersion(v)
@@ -49,7 +49,8 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 	}
 	if *isInstalled && targetPath != nil {
 		logger.Infof("pnpm version %s is already installed in %s", *result.Version, *targetPath)
-		return targetPath, nil
+		var pmPaths = pmManager.GetAllPathsToLink(*targetPath)
+		return &pmPaths, nil
 	} else {
 		logger.Infof("Selected %s version: %s", result.Name, selectedVersion.String())
 		release, err := pmManager.DownloadRelease(selectedVersion.String())
@@ -57,12 +58,19 @@ func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogg
 			logger.Warnf("Error getting release of pnpm: %v", err)
 			return nil, err
 		}
-		targetPath, err = filemanagement.SavePnpmToInstallDir(release, logger, selectedVersion.String(), pmManager)
+		targetPath, err = filemanagement.SavePackageManager(release, logger, selectedVersion.String(), pmManager)
 		if err != nil {
 			logger.Warnf("Error saving pnpm to install dir: %v", err)
 			return nil, err
 		}
-	}
+		logger.Infof("Installed %s version %s in %s", result.Name, selectedVersion.String(), *targetPath)
+		targetPath, err = pmManager.ExtractToFilesystem(*targetPath)
+		if err != nil {
+			logger.Warnf("Error extracting pnpm to filesystem: %v", err)
+			return nil, err
+		}
 
-	return targetPath, nil
+	}
+	var pmPaths = pmManager.GetAllPathsToLink(*targetPath)
+	return &pmPaths, nil
 }

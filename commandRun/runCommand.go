@@ -35,7 +35,7 @@ func RunCommand(detectionResult *detection.PackageManagerDetectionResult, select
 	// We need to prepend the package manager executable to the command
 
 	if *detectionResult.Agent == detection.AgentNameNpm {
-		cmd = exec.Command("npm", remainingArgs...)
+		cmd = exec.Command("npm.cmd", remainingArgs...)
 	} else if *detectionResult.Agent == detection.AgentNameYarn {
 		cmd = exec.Command("yarn", remainingArgs...)
 	} else if *detectionResult.Agent == detection.AgentNamePnpm {

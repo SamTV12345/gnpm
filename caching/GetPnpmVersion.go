@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func GetPnpmVersion(logger *zap.SugaredLogger, pm interfaces.IPackageManager) []string {
+func GetPmVersion(logger *zap.SugaredLogger, pm interfaces.IPackageManager) []string {
 	cacheDir, err := filemanagement.GetCacheDir()
 	if err != nil {
 		logger.Warnf("Error getting cache dir: %v", err)

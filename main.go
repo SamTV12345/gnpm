@@ -43,7 +43,7 @@ func main() {
 		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
 
 		// Link
-		*runtimeTargetPath = append(*runtimeTargetPath, *pmTargetPath)
+		*runtimeTargetPath = append(*runtimeTargetPath, *pmTargetPath...)
 		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
 	}
 
