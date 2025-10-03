@@ -1,6 +1,6 @@
 package http
 
-type PnpmIndex struct {
+type GithubIndex struct {
 	Versions map[string]any `json:"versions"`
 }
 
@@ -10,6 +10,6 @@ type Asset struct {
 	Digest             string `json:"digest"`
 }
 
-type PnpmRelease struct {
+type GitHubRelease struct {
 	Assets []Asset `json:"assets"`
 }

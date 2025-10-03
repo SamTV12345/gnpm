@@ -3,6 +3,8 @@ package http
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -13,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func DownloadFile(url string, sha256Sum *string, logger *zap.SugaredLogger, title string) ([]byte, error) {
+func DownloadFile(url string, sha256Sum *string, logger *zap.SugaredLogger, title string, sha512Sum *string) ([]byte, error) {
 	response, err := http.Get(url)
 	if err != nil {
 		logger.Error("Error downloading Node.js:", err)
@@ -38,5 +40,16 @@ func DownloadFile(url string, sha256Sum *string, logger *zap.SugaredLogger, titl
 			return nil, errors.New("SHA256 checksum does not match")
 		}
 	}
+
+	if sha512Sum != nil && *sha512Sum != "" {
+		s := sha512.New()
+		s.Write(data)
+		shaSumFromPackage := s.Sum(nil)
+		hash := "sha512-" + base64.StdEncoding.EncodeToString(shaSumFromPackage)
+		if hash != *sha512Sum {
+			return nil, errors.New("SHA512 checksum does not match")
+		}
+	}
+
 	return data, nil
 }

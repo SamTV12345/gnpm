@@ -24,7 +24,7 @@ func main() {
 	}
 	var remainingArgs = args[1:]
 
-	// Download and link all runtime and pnpm versions
+	// Download and link all runtime and pm versions
 	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
 	if err != nil || selectedRuntime == nil {
 		logger.Errorw("Error handling runtime version", "error", err)
@@ -43,7 +43,7 @@ func main() {
 		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
 
 		// Link
-		*runtimeTargetPath = append(*runtimeTargetPath, *pmTargetPath)
+		*runtimeTargetPath = append(*runtimeTargetPath, *pmTargetPath...)
 		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
 	}
 

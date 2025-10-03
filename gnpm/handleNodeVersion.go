@@ -61,7 +61,7 @@ func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (relevantPat
 		logger.Infof("%s version %s already exists in cache", selectedRuntime.GetRuntimeName(), (*runtimeVersionToDownload).GetVersion())
 	} else {
 		// Download and save to cache
-		runtimeData, err := http.DownloadFile(createRuntimeDownloadUrlInfo.RuntimeUrl, &createRuntimeDownloadUrlInfo.Sha256, logger, "Downloading "+selectedRuntime.GetRuntimeName())
+		runtimeData, err := http.DownloadFile(createRuntimeDownloadUrlInfo.RuntimeUrl, &createRuntimeDownloadUrlInfo.Sha256, logger, "Downloading "+selectedRuntime.GetRuntimeName(), &createRuntimeDownloadUrlInfo.Sha512)
 		if err != nil {
 			logger.Errorf("Error downloading %s with cause %s", selectedRuntime.GetRuntimeName(), err)
 			return nil, nil, err
