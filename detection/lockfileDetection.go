@@ -101,12 +101,18 @@ func handlePackageManager(filePath string, logger *zap.SugaredLogger) *PackageMa
 
 		if res == AgentNameYarn {
 			if parsedVersion, err := strconv.Atoi(*result.Version); err == nil && parsedVersion >= 2 {
-				var versionBerry = "berry"
 				var agentBerry = AgentYarnBerry
 				return &PackageManagerDetectionResult{
-					Name:    result.Name,
-					Version: &versionBerry,
+					Name:    result.Name + "@berry",
+					Version: version,
 					Agent:   &agentBerry,
+				}
+			} else {
+				var agentClassic = AgentYarn
+				return &PackageManagerDetectionResult{
+					Name:    result.Name + "@classic",
+					Version: version,
+					Agent:   &agentClassic,
 				}
 			}
 		} else if name == "pnpm" {
