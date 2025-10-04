@@ -23,7 +23,7 @@ func main() {
 		logger.Warn("You need to specify a command to run")
 		return
 	}
-	var remainingArgs = args[1:]
+	var remainingArgs = commandRun.FilterArgs(args[1:])
 
 	// Download and link all runtime and pm versions
 	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(cmdFlags, logger)
