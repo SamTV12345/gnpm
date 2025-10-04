@@ -38,7 +38,7 @@ func main() {
 		pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
 		if err != nil {
 			logger.Errorw("Error handling package manager version", "error", err)
-			return
+			os.Exit(1)
 		}
 		logger.Infof("Package manager %s installed at %s", packageManagerDecision.Name, *pmTargetPath)
 
@@ -49,7 +49,7 @@ func main() {
 	err = gnpm.LinkRequiredPaths(*runtimeTargetPath, logger, packageManagerDecision)
 	if err != nil {
 		logger.Errorf("Error linking package manager to %s", err)
-		return
+		os.Exit(2)
 	}
 	commandRun.RunCommand(packageManagerDecision, *selectedRuntime, remainingArgs, logger)
 }
