@@ -1,29 +1,16 @@
 package detection
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/packageJson"
 	"go.uber.org/zap"
 )
-
-func pathExists(path string, isDirectory bool) bool {
-	result, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-
-	if isDirectory {
-		return result.IsDir()
-	}
-
-	return !result.IsDir()
-}
 
 func Lookup(cwd string) <-chan string {
 	ch := make(chan string)
@@ -159,8 +146,8 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 			switch strategy {
 			case "lockfile":
 				for lock, name := range LOCKS {
-					if pathExists(filepath.Join(dir, lock), false) {
-						if pathExists(filepath.Join(dir, "package.json"), false) {
+					if filemanagement.PathExists(filepath.Join(dir, lock), false) {
+						if filemanagement.PathExists(filepath.Join(dir, "package.json"), false) {
 							// Package Manager field in package.json takes precedence over lockfile detection
 							var result = handlePackageManager(filepath.Join(dir, "package.json"), logger)
 							if result != nil {
@@ -184,7 +171,7 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 				}
 				break
 			case "packageManager-field", "devEngines-field":
-				if pathExists(filepath.Join(dir, "package.json"), false) {
+				if filemanagement.PathExists(filepath.Join(dir, "package.json"), false) {
 					var result = handlePackageManager(filepath.Join(dir, "package.json"), logger)
 					if result != nil {
 						return result
@@ -195,7 +182,7 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 				{
 					for metadata, tool := range INSTALL_METADATA {
 						var isMetadataDir = strings.HasPrefix(metadata, "/")
-						if pathExists(filepath.Join(dir, metadata), isMetadataDir) {
+						if filemanagement.PathExists(filepath.Join(dir, metadata), isMetadataDir) {
 							var result = PackageManagerDetectionResult{
 								Name:  tool,
 								Agent: &tool,
@@ -221,5 +208,12 @@ func DetectLockFileTool(path string, logger *zap.SugaredLogger) *PackageManagerD
 			break
 		}
 	}
+
+	var parent = filepath.Join(path, "..")
+	// Check for workspace root
+	if filemanagement.PathExists(filepath.Join(parent, "package.json"), false) {
+		return DetectLockFileTool(parent, logger)
+	}
+
 	return nil
 }

@@ -33,6 +33,7 @@ func main() {
 	var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
 	if packageManagerDecision == nil {
 		logger.Info("No package manager detected")
+		os.Exit(1)
 	} else {
 		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
 		pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)

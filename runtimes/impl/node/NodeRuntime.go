@@ -56,6 +56,15 @@ func (n Runtime) GetInformationFromPackageJSON(proposedVersion *string, path str
 		versionToDownload = proposedVersion
 	}
 
+	if versionToDownload == nil {
+		// Check parent directory for .nvmrc and package.json engines field
+		parentPath := filepath.Join(path, "..")
+		packageJsonPath := filepath.Join(parentPath, "package.json")
+		if _, err := os.Stat(packageJsonPath); err == nil {
+			return n.GetInformationFromPackageJSON(proposedVersion, parentPath, nodeVersions)
+		}
+	}
+
 	if versionToDownload != nil {
 		constraints, err := semver.NewConstraint(*versionToDownload)
 		if err != nil {

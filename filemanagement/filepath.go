@@ -60,3 +60,16 @@ func userDataDir() string {
 	}
 	return ""
 }
+
+func PathExists(path string, isDirectory bool) bool {
+	result, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	if isDirectory {
+		return result.IsDir()
+	}
+
+	return !result.IsDir()
+}
