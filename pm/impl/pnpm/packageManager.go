@@ -43,6 +43,9 @@ func getPnpmFilename() string {
 }
 
 func (p Pnpm) GetAllPathsToLink(targetPath string) []string {
+	if err := os.Chmod(targetPath, 0777); err != nil {
+		p.Logger.Warnw("Error making pnpm executable", "error", err)
+	}
 	targetPathForNameWithoutVersion := filepath.Join(filepath.Dir(targetPath), getPnpmFilename())
 	_, err := os.Stat(targetPathForNameWithoutVersion)
 	if os.IsNotExist(err) {
