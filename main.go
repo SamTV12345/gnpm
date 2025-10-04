@@ -17,6 +17,7 @@ func main() {
 		logger.Error("Failed to get current working directory", err)
 		return
 	}
+	var cmdFlags = commandRun.ParseFlags()
 	var args = os.Args
 	if len(args) == 1 {
 		logger.Warn("You need to specify a command to run")
@@ -25,7 +26,7 @@ func main() {
 	var remainingArgs = args[1:]
 
 	// Download and link all runtime and pm versions
-	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(remainingArgs[1:], logger)
+	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(cmdFlags, logger)
 	if err != nil || selectedRuntime == nil {
 		logger.Errorw("Error handling runtime version", "error", err)
 		return
@@ -35,8 +36,13 @@ func main() {
 		logger.Info("No package manager detected")
 		os.Exit(1)
 	} else {
+
+		if cmdFlags.PackageManagerVersion != nil {
+			packageManagerDecision.Version = cmdFlags.PackageManagerVersion
+		}
+
 		logger.Infof("Package Manager detected: %s", packageManagerDecision.Name)
-		pmTargetPath, err := gnpm.HandlePackageManagerVersion(remainingArgs[1:], logger, *packageManagerDecision)
+		pmTargetPath, err := gnpm.HandlePackageManagerVersion(cmdFlags, logger, *packageManagerDecision)
 		if err != nil {
 			logger.Errorw("Error handling package manager version", "error", err)
 			os.Exit(1)

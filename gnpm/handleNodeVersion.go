@@ -7,6 +7,7 @@ import (
 
 	"github.com/samtv12345/gnpm/archive"
 	"github.com/samtv12345/gnpm/caching"
+	"github.com/samtv12345/gnpm/commandRun"
 	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/http"
 	"github.com/samtv12345/gnpm/models"
@@ -30,7 +31,7 @@ func createRelevantRuntimePaths(targetPath string, selectedRuntime interfaces.IR
 	return []string{runtimePath}
 }
 
-func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (relevantPathsToReturn *[]string, selectedRuntimeFor *interfaces.IRuntime, err error) {
+func HandleRuntimeVersion(args commandRun.FlagArguments, logger *zap.SugaredLogger) (relevantPathsToReturn *[]string, selectedRuntimeFor *interfaces.IRuntime, err error) {
 	var selectedRuntime = runtimes.GetRuntimeSelection(logger)
 	runtimeVersions, err := selectedRuntime.GetAllVersionsOfRuntime()
 
@@ -40,7 +41,7 @@ func HandleRuntimeVersion(args []string, logger *zap.SugaredLogger) (relevantPat
 	}
 
 	// Parse runtime version from e.g. .nvmrc or package.json
-	runtimeVersionToDownload, err := selectedRuntime.GetInformationFromPackageJSON(nil, ".", runtimeVersions)
+	runtimeVersionToDownload, err := selectedRuntime.GetInformationFromPackageJSON(args.RuntimeVersion, ".", runtimeVersions)
 	if err != nil {
 		logger.Errorf("Error determining  version %s with cause %s %s", selectedRuntime.GetRuntimeName(), "error", err)
 		return nil, nil, err

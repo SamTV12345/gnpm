@@ -6,13 +6,14 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/samtv12345/gnpm/caching"
+	"github.com/samtv12345/gnpm/commandRun"
 	"github.com/samtv12345/gnpm/detection"
 	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/pm"
 	"go.uber.org/zap"
 )
 
-func HandlePackageManagerVersion(remainingArgs []string, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) (*[]string, error) {
+func HandlePackageManagerVersion(args commandRun.FlagArguments, logger *zap.SugaredLogger, result detection.PackageManagerDetectionResult) (*[]string, error) {
 	pmManager := pm.GetPackageManagerSelection(result.Name, logger)
 	// Get all available pm versions
 	pmVersions := caching.GetPmVersion(logger, pmManager)

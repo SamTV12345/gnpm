@@ -36,24 +36,25 @@ func (n Runtime) GetRuntimeName() string {
 
 func (n Runtime) GetInformationFromPackageJSON(proposedVersion *string, path string, nodeVersions *[]interfaces.IRuntimeVersion) (*interfaces.IRuntimeVersion, error) {
 	var versionToDownload *string
-	packageManifest, err := packageJson.ReadPackageJson(filepath.Join(path, "package.json"))
-	if err != nil {
-		return nil, err
-	}
-
-	// Check .nvmrc first
-	nvmrcVersion, errNvmrc := packageJson.ReadRuntimeVersionFile(filepath.Join(path, ".nvmrc"))
-	if errNvmrc == nil {
-		versionToDownload = &nvmrcVersion
-	}
-
-	// Then check the package.json "engines" field
-	if packageManifest != nil && packageManifest.Engines != nil && packageManifest.Engines.Node != nil {
-		versionToDownload = packageManifest.Engines.Node
-	}
 
 	if proposedVersion != nil {
 		versionToDownload = proposedVersion
+	} else {
+		packageManifest, err := packageJson.ReadPackageJson(filepath.Join(path, "package.json"))
+		if err != nil {
+			return nil, err
+		}
+
+		// Check .nvmrc first
+		nvmrcVersion, errNvmrc := packageJson.ReadRuntimeVersionFile(filepath.Join(path, ".nvmrc"))
+		if errNvmrc == nil {
+			versionToDownload = &nvmrcVersion
+		}
+
+		// Then check the package.json "engines" field
+		if packageManifest != nil && packageManifest.Engines != nil && packageManifest.Engines.Node != nil {
+			versionToDownload = packageManifest.Engines.Node
+		}
 	}
 
 	if versionToDownload == nil {
