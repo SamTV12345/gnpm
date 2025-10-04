@@ -3,7 +3,6 @@ package filemanagement
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 
 	http2 "github.com/samtv12345/gnpm/pm/impl/pnpm/http"
 	"github.com/samtv12345/gnpm/pm/interfaces"
@@ -39,33 +38,6 @@ func SavePackageManager(result *http2.DownloadReleaseResult, logger *zap.Sugared
 		return nil, err
 	}
 	return &locationToWritePnpm, nil
-}
-
-func buildPnpmFilename() string {
-	operatingSystem := runtime.GOOS
-	architecture := runtime.GOARCH
-
-	fileSuffix := ""
-	filePrefix := "pnpm-"
-
-	if architecture == "amd64" {
-		architecture = "x64"
-	}
-
-	if operatingSystem == "darwin" {
-		filePrefix += "win-" + architecture
-	}
-
-	if operatingSystem == "windows" {
-		fileSuffix = ".exe"
-		filePrefix += "win-" + architecture
-	} else if operatingSystem == "darwin" {
-		filePrefix += "macos-" + architecture
-	} else {
-		filePrefix += "linux-" + architecture
-	}
-
-	return filePrefix + fileSuffix
 }
 
 func IsPackageManagerInstalled(version string, pmManager interfaces.IPackageManager) (*bool, *string, error) {

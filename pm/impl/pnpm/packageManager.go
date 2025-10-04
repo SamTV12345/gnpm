@@ -49,7 +49,9 @@ func (p Pnpm) GetAllPathsToLink(targetPath string) []string {
 		if err := os.Symlink(targetPath, targetPathForNameWithoutVersion); err != nil {
 			p.Logger.Warnw("Error creating symlink for pnpm", "error", err)
 		}
+		p.Logger.Infof("Created symlink for pnpm: %s", targetPathForNameWithoutVersion)
 	}
+	p.Logger.Infof("Get all paths to link to: %s", targetPathForNameWithoutVersion)
 	return []string{targetPathForNameWithoutVersion}
 }
 
