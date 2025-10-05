@@ -24,8 +24,8 @@ func main() {
 	var remainingArgs = commandRun.FilterArgs(args[1:])
 
 	if cmdFlags.Env {
-		print(shell.ShowEnv(cwd))
-		os.Exit(0)
+		shell.ShowEnv(cwd)
+		return
 	}
 
 	if len(remainingArgs) == 0 {

@@ -1,12 +1,14 @@
 package shell
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/samtv12345/gnpm/filemanagement"
 )
 
-func ShowEnv(cwd string) string {
+func ShowEnv(cwd string) {
 	currentParent, err := filemanagement.FindParentLinkModuleDir(cwd)
 	if err != nil {
 		panic(err)
@@ -16,12 +18,14 @@ func ShowEnv(cwd string) string {
 		panic(err)
 	}
 	if strings.Contains(currentShell, "cmd.exe") {
-		return "set PATH=" + *currentParent + ";%PATH%"
+		println("set PATH=" + *currentParent + ";%PATH%")
+		return
 	}
 
 	if strings.Contains(currentShell, "powershell.exe") {
-		return "$env:PATH=\"" + *currentParent + ";$env:PATH\""
+		println("$env:PATH=\"" + *currentParent + ";$env:PATH\"")
+		return
 	}
 
-	return "export PATH=" + *currentParent + ":$PATH"
+	fmt.Printf("export PATH=%s:%s\n", *currentParent, os.Getenv("PATH"))
 }
