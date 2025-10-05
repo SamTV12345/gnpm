@@ -1,8 +1,6 @@
 package gnpm
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"os"
 	"path/filepath"
 
@@ -17,20 +15,18 @@ func LinkRequiredPaths(targetPaths []string, logger *zap.SugaredLogger, detectio
 	if err != nil {
 		return err
 	}
-	hash := sha256.Sum256([]byte(cwd))
-	hashHex := hex.EncodeToString(hash[:8])
-	symlinkName := "gnpm-" + hashHex
-	moduledir, err := filemanagement.EnsureModuleDir()
+
+	moduleDir, err := filemanagement.EncodePath(cwd)
 	if err != nil {
 		return err
 	}
-	var moduleDir = filepath.Join(*moduledir, symlinkName)
-	if err = os.Mkdir(moduleDir, os.ModePerm); err != nil && !os.IsExist(err) {
+
+	if err = os.Mkdir(*moduleDir, os.ModePerm); err != nil && !os.IsExist(err) {
 		return err
 	}
 
 	for _, path := range targetPaths {
-		filePathToCheck := filepath.Join(moduleDir, rewriteFileTargetName(path))
+		filePathToCheck := filepath.Join(*moduleDir, rewriteFileTargetName(path))
 		logger.Debugf("Checking path: %s", filePathToCheck)
 		if _, err := os.Lstat(filePathToCheck); err == nil {
 			if err := os.Remove(filePathToCheck); err != nil {
@@ -41,12 +37,12 @@ func LinkRequiredPaths(targetPaths []string, logger *zap.SugaredLogger, detectio
 
 	for _, path := range targetPaths {
 		logger.Debugf("Creating path: %s", path)
-		filePathToCheck := filepath.Join(moduleDir, rewriteFileTargetName(path))
+		filePathToCheck := filepath.Join(*moduleDir, rewriteFileTargetName(path))
 		err := os.Symlink(path, filePathToCheck)
 		if err != nil {
 			return err
 		}
 	}
 
-	return shell.PropagateChangesToCurrentShell(moduleDir, logger)
+	return shell.PropagateChangesToCurrentShell(*moduleDir, logger)
 }

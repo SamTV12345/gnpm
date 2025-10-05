@@ -7,6 +7,7 @@ import (
 	"github.com/samtv12345/gnpm/detection"
 	"github.com/samtv12345/gnpm/gnpm"
 	"github.com/samtv12345/gnpm/logging"
+	"github.com/samtv12345/gnpm/shell"
 )
 
 func main() {
@@ -19,12 +20,18 @@ func main() {
 	}
 	var cmdFlags = commandRun.ParseFlags()
 	var args = os.Args
-	if len(args) == 1 {
+
+	var remainingArgs = commandRun.FilterArgs(args[1:])
+
+	if cmdFlags.Env {
+		println(shell.ShowEnv(cwd))
+		os.Exit(0)
+	}
+
+	if len(remainingArgs) == 0 {
 		logger.Warn("You need to specify a command to run")
 		return
 	}
-	var remainingArgs = commandRun.FilterArgs(args[1:])
-
 	// Download and link all runtime and pm versions
 	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(cmdFlags, logger)
 	if err != nil || selectedRuntime == nil {

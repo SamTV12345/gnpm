@@ -11,21 +11,24 @@ import (
 type FlagArguments struct {
 	RuntimeVersion        *string
 	PackageManagerVersion *string
+	Env                   bool
 }
 
 func ParseFlags() FlagArguments {
 	flag.String("runtimeVersion", "", "runtimeVersion flag")
 	flag.String("packageManagerVersion", "", "runtimeVersion flag")
+	flag.Bool("gnpmEnv", false, "env flag for printing environment")
 
 	pflag.CommandLine.ParseErrorsWhitelist.UnknownFlags = true
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 
+	var flagArguments = FlagArguments{}
+
 	var parsedRuntimeVersion = viper.GetString("runtimeVersion")
 	var parsedPackageManagerVersion = viper.GetString("packageManagerVersion")
-
-	var flagArguments = FlagArguments{}
+	flagArguments.Env = viper.GetBool("gnpmEnv")
 
 	if parsedRuntimeVersion != "" {
 		flagArguments.RuntimeVersion = &parsedRuntimeVersion
@@ -40,6 +43,7 @@ func ParseFlags() FlagArguments {
 var knownFlags = []string{
 	"--runtimeVersion", "--packageManagerVersion",
 	"-runtimeVersion", "-packageManagerVersion",
+	"--gnpmEnv", "-gnpmEnv",
 }
 
 func FilterArgs(args []string) []string {

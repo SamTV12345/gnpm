@@ -1,6 +1,8 @@
 package filemanagement
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
@@ -8,6 +10,19 @@ import (
 )
 
 const DataDir = "gnpm"
+
+func EncodePath(path string) (*string, error) {
+	hash := sha256.Sum256([]byte(path))
+	hashHex := hex.EncodeToString(hash[:8])
+	symlinkName := "gnpm-" + hashHex
+	moduledir, err := EnsureModuleDir()
+	if err != nil {
+		return nil, err
+	}
+	var moduleDir = filepath.Join(*moduledir, symlinkName)
+
+	return &moduleDir, nil
+}
 
 func EnsureDataDir() (*string, error) {
 	dir := userDataDir()
@@ -36,6 +51,25 @@ func EnsureModuleDir() (*string, error) {
 		return nil, err
 	}
 	return &modulesDir, nil
+}
+
+func FindParentLinkModuleDir(startDir string) (*string, error) {
+	potentialPackageJsonDir, err := EncodePath(startDir)
+	if err != nil {
+		return nil, err
+	}
+	_, err = os.Stat(*potentialPackageJsonDir)
+	if os.IsNotExist(err) {
+		parentDir := filepath.Dir(startDir)
+		if parentDir == startDir {
+			return nil, errors.New("could not find gnpm modules directory in any parent directories")
+		}
+		return FindParentLinkModuleDir(parentDir)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return potentialPackageJsonDir, nil
 }
 
 func userDataDir() string {
