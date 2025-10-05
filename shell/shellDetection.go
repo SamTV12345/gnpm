@@ -85,10 +85,11 @@ func DarwinShell() (string, error) {
 }
 
 func WindowsShell() (string, error) {
-	consoleApp := os.Getenv("COMSPEC")
-	if consoleApp == "" {
-		consoleApp = "cmd.exe"
+	consoleAppOut := os.Getenv("PsModulePath")
+
+	if strings.Contains(consoleAppOut, "WindowsPowerShell") {
+		return "powershell.exe", nil
 	}
 
-	return consoleApp, nil
+	return "cmd.exe", nil
 }
