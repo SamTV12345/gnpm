@@ -57,5 +57,6 @@ func RunCommand(detectionResult *detection.PackageManagerDetectionResult, select
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		logger.Errorw("Error running command", "error", err)
+		os.Exit(1)
 	}
 }

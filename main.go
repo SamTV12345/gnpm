@@ -16,7 +16,7 @@ func main() {
 	cwd, err := os.Getwd()
 	if err != nil {
 		logger.Error("Failed to get current working directory", err)
-		return
+		os.Exit(1)
 	}
 	var cmdFlags = commandRun.ParseFlags()
 	var args = os.Args
@@ -30,13 +30,13 @@ func main() {
 
 	if len(remainingArgs) == 0 {
 		logger.Warn("You need to specify a command to run")
-		return
+		os.Exit(1)
 	}
 	// Download and link all runtime and pm versions
 	runtimeTargetPath, selectedRuntime, err := gnpm.HandleRuntimeVersion(cmdFlags, logger)
 	if err != nil || selectedRuntime == nil {
 		logger.Errorw("Error handling runtime version", "error", err)
-		return
+		os.Exit(1)
 	}
 	var packageManagerDecision = detection.DetectLockFileTool(cwd, logger)
 	if packageManagerDecision == nil {
