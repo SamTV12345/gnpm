@@ -4,13 +4,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/samtv12345/gnpm/detection"
 	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/shell"
 	"go.uber.org/zap"
 )
 
-func LinkRequiredPaths(targetPaths []string, logger *zap.SugaredLogger, detection *detection.PackageManagerDetectionResult) error {
+func LinkRequiredPaths(targetPaths []string, logger *zap.SugaredLogger) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
