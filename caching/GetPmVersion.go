@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func GetPmVersion(logger *zap.SugaredLogger, pm interfaces.IPackageManager) []string {
+func GetPmVersion(logger *zap.SugaredLogger, pm interfaces.IPackageManager, forceInstall *bool) []string {
 	cacheDir, err := filemanagement.GetCacheDir()
 	if err != nil {
 		logger.Warnf("Error getting cache dir: %v", err)
@@ -19,7 +19,7 @@ func GetPmVersion(logger *zap.SugaredLogger, pm interfaces.IPackageManager) []st
 	pnpmJsonFile := filepath.Join(*cacheDir, pm.GetName()+".json")
 
 	fsInfo, err := os.Stat(pnpmJsonFile)
-	if os.IsNotExist(err) || fsInfo.Size() == 0 {
+	if os.IsNotExist(err) || fsInfo.Size() == 0 || (forceInstall != nil && *forceInstall) {
 		pnpmVersion, err := pm.GetAllVersions()
 		if err != nil {
 			logger.Warnf("Error fetching %s versions: %v", pm.GetName(), err)

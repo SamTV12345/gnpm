@@ -4,13 +4,16 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
+	"sort"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/samtv12345/gnpm/archive"
 	"github.com/samtv12345/gnpm/caching"
 	"github.com/samtv12345/gnpm/commandRun"
 	"github.com/samtv12345/gnpm/filemanagement"
 	"github.com/samtv12345/gnpm/http"
 	"github.com/samtv12345/gnpm/models"
+	"github.com/samtv12345/gnpm/packageJson"
 	"github.com/samtv12345/gnpm/runtimes"
 	"github.com/samtv12345/gnpm/runtimes/interfaces"
 	"go.uber.org/zap"
@@ -33,7 +36,7 @@ func createRelevantRuntimePaths(targetPath string, selectedRuntime interfaces.IR
 
 func HandleRuntimeVersion(args commandRun.FlagArguments, logger *zap.SugaredLogger) (relevantPathsToReturn *[]string, selectedRuntimeFor *interfaces.IRuntime, err error) {
 	var selectedRuntime = runtimes.GetRuntimeSelection(logger)
-	runtimeVersions, err := selectedRuntime.GetAllVersionsOfRuntime()
+	runtimeVersions, err := selectedRuntime.GetAllVersionsOfRuntime(nil)
 
 	if err != nil {
 		logger.Errorf("Error fetching %s versions with cause %s", selectedRuntime.GetRuntimeName(), err)
@@ -41,7 +44,7 @@ func HandleRuntimeVersion(args commandRun.FlagArguments, logger *zap.SugaredLogg
 	}
 
 	// Parse runtime version from e.g. .nvmrc or package.json
-	runtimeVersionToDownload, err := selectedRuntime.GetInformationFromPackageJSON(args.RuntimeVersion, ".", runtimeVersions)
+	runtimeVersionToDownload, err := getInformationFromPackageJSON(args.RuntimeVersion, ".", runtimeVersions, selectedRuntime, logger)
 	if err != nil {
 		logger.Errorf("Error determining  version %s with cause %s %s", selectedRuntime.GetRuntimeName(), "error", err)
 		return nil, nil, err
@@ -102,6 +105,93 @@ func HandleRuntimeVersion(args commandRun.FlagArguments, logger *zap.SugaredLogg
 	}
 	relevantPaths := createRelevantRuntimePaths(*targetPath, selectedRuntime)
 	return &relevantPaths, selectedRuntimeFor, nil
+}
+
+func getInformationFromPackageJSON(proposedVersion *string, path string, versions *[]interfaces.IRuntimeVersion, runtime interfaces.IRuntime, logger *zap.SugaredLogger) (*interfaces.IRuntimeVersion, error) {
+	var versionToDownload *string
+	var semverVersions = make([]*semver.Version, 0)
+	packageManifest, err := packageJson.ReadPackageJson(filepath.Join(path, "package.json"))
+	if err != nil {
+		return nil, err
+	}
+	// Check the rc file first
+	bunvmRC, errNvmrc := packageJson.ReadRuntimeVersionFile(filepath.Join(path, runtime.GetRcFilename()))
+	if errNvmrc == nil {
+		versionToDownload = &bunvmRC
+	}
+
+	// Then check the package.json "engines" field
+	if packageManifest != nil && packageManifest.Engines != nil {
+		versionToDownload = runtime.GetEngine(packageManifest.Engines)
+	}
+
+	if proposedVersion != nil {
+		versionToDownload = proposedVersion
+	}
+
+	if versionToDownload != nil {
+		constraints, err := semver.NewConstraint(*versionToDownload)
+		if err != nil {
+			logger.Errorw("Error parsing version", "error", err)
+		}
+
+		var possibleVersions = make([]*semver.Version, 0)
+		for _, bunVersion := range *versions {
+			v, err := semver.NewVersion(bunVersion.GetVersion())
+			semverVersions = append(semverVersions, v)
+			if err != nil {
+				logger.Errorw("Error parsing version", "error", err, bunVersion.GetVersion())
+				continue
+			}
+			if constraints.Check(v) {
+				possibleVersions = append(possibleVersions, v)
+			}
+		}
+
+		if len(possibleVersions) == 0 {
+			sort.Sort(semver.Collection(semverVersions))
+			if len(semverVersions) > 0 {
+				latestVersion := semverVersions[len(semverVersions)-1]
+				// Prüfe, ob die Constraint größer als die neueste Version ist
+				if constraints.Check(latestVersion) == false {
+					var fetchAll = true
+					var allVersions, err = runtime.GetAllVersionsOfRuntime(&fetchAll)
+					if err != nil {
+						return nil, err
+					}
+					return getInformationFromPackageJSON(proposedVersion, path, allVersions, runtime, logger)
+				}
+			}
+		}
+
+		// Sort possibleVersions in descending order
+		sort.Sort(semver.Collection(possibleVersions))
+
+		if len(possibleVersions) > 0 {
+			latestVersion := possibleVersions[len(possibleVersions)-1].String()
+			versionToDownload = &latestVersion
+		}
+	} else {
+		// Default to the latest LTS version if no version is specified
+		for _, nodeVersion := range *versions {
+			if nodeVersion.IsLTS() != false {
+				var nodeVersion = nodeVersion.GetVersion()
+				versionToDownload = &nodeVersion
+				break
+			}
+		}
+	}
+
+	if versionToDownload == nil {
+		return nil, errors.New("error finding a suitable bun version")
+	}
+
+	for _, nodeVersion := range *versions {
+		if nodeVersion.GetVersion() == *versionToDownload || nodeVersion.GetVersion() == "v"+*versionToDownload {
+			return &nodeVersion, nil
+		}
+	}
+	return nil, errors.New("error finding a suitable Bun version")
 }
 
 func createDownloadUrl(runtimeVersionToDownload interfaces.IRuntimeVersion, runtime interfaces.IRuntime, logger *zap.SugaredLogger) (*models.CreateDownloadStruct, error) {

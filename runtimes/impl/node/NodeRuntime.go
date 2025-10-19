@@ -26,6 +26,17 @@ type Runtime struct {
 	Logger *zap.SugaredLogger
 }
 
+func (n Runtime) GetRcFilename() string {
+	return ".nvmrc"
+}
+
+func (n Runtime) GetEngine(engine *packageJson.Engines) *string {
+	if engine != nil {
+		return engine.Node
+	}
+	return nil
+}
+
 func (n Runtime) GetVersionedFilename(_ string, filename string) string {
 	return filename
 }
@@ -114,14 +125,14 @@ func (n Runtime) GetInformationFromPackageJSON(proposedVersion *string, path str
 	return nil, errors.New("error finding a suitable Node.js version")
 }
 
-func (n Runtime) GetAllVersionsOfRuntime() (*[]interfaces.IRuntimeVersion, error) {
+func (n Runtime) GetAllVersionsOfRuntime(forceInstall *bool) (*[]interfaces.IRuntimeVersion, error) {
 	dataDir, err := filemanagement.EnsureDataDir()
 	if err != nil {
 		return nil, err
 	}
 	nodeJSCacheFile := filepath.Join(*dataDir, ".cache", "nodejs_index.json")
 	fsInfo, err := os.Stat(nodeJSCacheFile)
-	if os.IsNotExist(err) || fsInfo.Size() == 0 {
+	if os.IsNotExist(err) || fsInfo.Size() == 0 || (forceInstall != nil && *forceInstall) {
 		nodeVersions, err := http.GetNodeJsVersion(n.Logger)
 		if err != nil {
 			return nil, err
