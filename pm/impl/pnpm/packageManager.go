@@ -22,12 +22,12 @@ type Pnpm struct {
 }
 
 func (p Pnpm) ExtractToFilesystem(targetPath string) (*string, error) {
-	dataDir, err := filemanagement.EnsureDataDir()
+	gnpmDir, err := filemanagement.GetGnpmDir()
 	if err != nil {
 		return nil, err
 	}
 	filename := filepath.Base(targetPath)
-	linkPnpm := filepath.Join(*dataDir, "_gnpm", filename)
+	linkPnpm := filepath.Join(*gnpmDir, filename)
 	if err := os.Symlink(targetPath, linkPnpm); err != nil {
 		return nil, err
 	}

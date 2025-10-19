@@ -92,11 +92,11 @@ func (r Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameS
 }
 
 func (r Runtime) GetAllVersionsOfRuntime(forceDownload *bool) (*[]interfaces.IRuntimeVersion, error) {
-	dataDir, err := filemanagement.EnsureDataDir()
+	cacheDir, err := filemanagement.GetCacheDir()
 	if err != nil {
 		return nil, err
 	}
-	nodeJSCacheFile := filepath.Join(*dataDir, ".cache", "bun_index.json")
+	nodeJSCacheFile := filepath.Join(*cacheDir, "bun_index.json")
 	fsInfo, err := os.Stat(nodeJSCacheFile)
 	if os.IsNotExist(err) || fsInfo.Size() == 0 || (forceDownload != nil && *forceDownload) {
 		nodeVersions, err := http2.GetBunVersions(r.Logger)

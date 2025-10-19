@@ -11,11 +11,33 @@ import (
 
 const DataDir = "gnpm"
 
+var directoriesInGnpm = []string{
+	"modules",
+	".cache",
+	"_gnpm",
+}
+
+var files = map[string]string{}
+
+func init() {
+	var userDir = dataDir()
+	if err := os.MkdirAll(userDir, os.ModePerm); err != nil {
+		panic("Could not create gnpm data directory: " + err.Error())
+	}
+	for _, dir := range directoriesInGnpm {
+		err := os.MkdirAll(filepath.Join(userDir, dir), os.ModePerm)
+		if err != nil {
+			panic("Could not create gnpm subdirectory: " + dir + err.Error())
+		}
+		files[dir] = filepath.Join(userDir, dir)
+	}
+}
+
 func EncodePath(path string) (*string, error) {
 	hash := sha256.Sum256([]byte(path))
 	hashHex := hex.EncodeToString(hash[:8])
 	symlinkName := "gnpm-" + hashHex
-	moduledir, err := EnsureModuleDir()
+	moduledir, err := GetModuleDir()
 	if err != nil {
 		return nil, err
 	}
@@ -24,33 +46,28 @@ func EncodePath(path string) (*string, error) {
 	return &moduleDir, nil
 }
 
-func EnsureDataDir() (*string, error) {
-	dir := userDataDir()
-	if dir == "" {
-		return nil, errors.New(DataDir + " not found in $PATH")
+func GetModuleDir() (*string, error) {
+	moduleDir, exists := files["modules"]
+	if !exists {
+		return nil, errors.New("could not find gnpm modules directory")
 	}
-	err := os.MkdirAll(dir, os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	err = os.MkdirAll(filepath.Join(dir, ".cache"), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	return &dir, nil
+	return &moduleDir, nil
 }
 
-func EnsureModuleDir() (*string, error) {
-	dataDir, err := EnsureDataDir()
-	if err != nil {
-		return nil, err
+func GetCacheDir() (*string, error) {
+	cacheDir, exists := files[".cache"]
+	if !exists {
+		return nil, errors.New("could not find gnpm cache directory")
 	}
-	modulesDir := filepath.Join(*dataDir, "modules")
-	err = os.MkdirAll(modulesDir, os.ModePerm)
-	if err != nil {
-		return nil, err
+	return &cacheDir, nil
+}
+
+func GetGnpmDir() (*string, error) {
+	gnpmDir, exists := files["_gnpm"]
+	if !exists {
+		return nil, errors.New("could not find gnpm _gnpm directory")
 	}
-	return &modulesDir, nil
+	return &gnpmDir, nil
 }
 
 func FindParentLinkModuleDir(startDir string) (*string, error) {
@@ -72,7 +89,7 @@ func FindParentLinkModuleDir(startDir string) (*string, error) {
 	return potentialPackageJsonDir, nil
 }
 
-func userDataDir() string {
+func dataDir() string {
 	switch runtime.GOOS {
 	case "windows":
 		if appData := os.Getenv("APPDATA"); appData != "" {

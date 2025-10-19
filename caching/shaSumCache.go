@@ -12,11 +12,11 @@ import (
 )
 
 func GetShaSumCacheInPath(runtime interfaces.IRuntime, version string) (*[]models.CreateFilenameStruct, error) {
-	var dataDir, err = filemanagement.EnsureDataDir()
+	var cacheDir, err = filemanagement.GetCacheDir()
 	if err != nil {
 		return nil, err
 	}
-	var file = filepath.Join(*dataDir, ".cache", fmt.Sprintf("shaSumCache_%s_%s.json", runtime.GetRuntimeName(), version))
+	var file = filepath.Join(*cacheDir, fmt.Sprintf("shaSumCache_%s_%s.json", runtime.GetRuntimeName(), version))
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		shaData, err := runtime.GetShaSumsForRuntime(version)
 		if err != nil {

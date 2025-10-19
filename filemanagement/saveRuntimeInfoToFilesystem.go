@@ -50,19 +50,6 @@ func SaveDenoInfoToFilesystem[T interfaces.IRuntimeVersion](nodeIndices []T) err
 	return os.WriteFile(pathToSaveTo, jsonBytes, os.ModePerm)
 }
 
-func GetCacheDir() (*string, error) {
-	dataDir, err := EnsureDataDir()
-	if err != nil {
-		return nil, err
-	}
-	cacheDir := filepath.Join(*dataDir, ".cache")
-	err = os.MkdirAll(cacheDir, os.ModePerm)
-	if err != nil && !os.IsExist(err) {
-		return nil, err
-	}
-	return &cacheDir, nil
-}
-
 func ReadNodeInfoFromFilesystem() (*[]interfaces.IRuntimeVersion, error) {
 	cacheDir, err := GetCacheDir()
 	if err != nil {

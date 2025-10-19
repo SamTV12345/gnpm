@@ -91,11 +91,11 @@ func (r Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameS
 }
 
 func (r Runtime) GetAllVersionsOfRuntime(forceInstall *bool) (*[]interfaces.IRuntimeVersion, error) {
-	dataDir, err := filemanagement.EnsureDataDir()
+	cacheDir, err := filemanagement.GetCacheDir()
 	if err != nil {
 		return nil, err
 	}
-	nodeJSCacheFile := filepath.Join(*dataDir, ".cache", "deno_index.json")
+	nodeJSCacheFile := filepath.Join(*cacheDir, "deno_index.json")
 	fsInfo, err := os.Stat(nodeJSCacheFile)
 	if os.IsNotExist(err) || fsInfo.Size() == 0 || (forceInstall != nil && *forceInstall) {
 		nodeVersions, err := http2.GetDenoVersions(r.Logger)

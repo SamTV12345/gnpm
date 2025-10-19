@@ -10,22 +10,12 @@ import (
 )
 
 func SavePackageManager(result *http2.DownloadReleaseResult, logger *zap.SugaredLogger, version string, pm interfaces.IPackageManager) (*string, error) {
-	dataDir, err := EnsureDataDir()
+	gnpmDir, err := GetCacheDir()
 	if err != nil {
 		return nil, err
 	}
-	gnpmDir := filepath.Join(*dataDir, ".cache")
-	_, err = os.Stat(gnpmDir)
-	if os.IsNotExist(err) {
-		err = os.Mkdir(gnpmDir, os.ModePerm)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		return nil, err
-	}
 
-	locationToWritePnpm := filepath.Join(gnpmDir, pm.GetName()+"-"+version+filepath.Ext(result.Filename))
+	locationToWritePnpm := filepath.Join(*gnpmDir, pm.GetName()+"-"+version+filepath.Ext(result.Filename))
 	_, err = os.Stat(locationToWritePnpm)
 	if os.IsNotExist(err) {
 	} else if err != nil {
@@ -44,12 +34,12 @@ func IsPackageManagerInstalled(version string, pmManager interfaces.IPackageMana
 	if version == "*" {
 		return &[]bool{false}[0], nil, nil
 	}
-	dataDir, err := EnsureDataDir()
+	gnpmDir, err := GetGnpmDir()
 	if err != nil {
 		return nil, nil, err
 	}
-	locationToCheck := filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version)
-	locationToCheck2 := filepath.Join(*dataDir, "_gnpm", pmManager.GetName()+"-"+version+".exe")
+	locationToCheck := filepath.Join(*gnpmDir, pmManager.GetName()+"-"+version)
+	locationToCheck2 := filepath.Join(*gnpmDir, pmManager.GetName()+"-"+version+".exe")
 	_, err = os.Stat(locationToCheck)
 	_, err2 := os.Stat(locationToCheck2)
 

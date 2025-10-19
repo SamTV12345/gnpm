@@ -10,16 +10,11 @@ import (
 )
 
 func SaveRuntimeToCacheDir(nodeData []byte, createNodeDat models.CreateDownloadStruct, logger *zap.SugaredLogger) (*string, error) {
-	dataDir, err := EnsureDataDir()
+	cacheDir, err := GetCacheDir()
 	if err != nil {
 		return nil, err
 	}
-	cacheDir := filepath.Join(*dataDir, ".cache")
-	err = os.Mkdir(cacheDir, os.ModePerm)
-	if err != nil && !os.IsExist(err) {
-		return nil, err
-	}
-	locationToWriteNodeJSArchive := filepath.Join(cacheDir, createNodeDat.Filename)
+	locationToWriteNodeJSArchive := filepath.Join(*cacheDir, createNodeDat.Filename)
 	logger.Debugf("Saving NodeJS to cache at location: %s", locationToWriteNodeJSArchive)
 	err = os.WriteFile(locationToWriteNodeJSArchive, nodeData, 0644)
 	if err != nil {
@@ -29,12 +24,12 @@ func SaveRuntimeToCacheDir(nodeData []byte, createNodeDat models.CreateDownloadS
 }
 
 func HasRuntimeVersionInCache(downloadStruct *models.CreateDownloadStruct, logger *zap.SugaredLogger, runtime *interfaces.IRuntime, versionToDownload interfaces.IRuntimeVersion) (*bool, *string, error) {
-	dataDir, err := EnsureDataDir()
+	cacheDir, err := GetCacheDir()
 	if err != nil {
 		return nil, nil, err
 	}
 	downloadStruct.Filename = (*runtime).GetVersionedFilename(versionToDownload.GetVersion(), downloadStruct.Filename)
-	cacheFileOfNodeJs := filepath.Join(*dataDir, ".cache", downloadStruct.Filename)
+	cacheFileOfNodeJs := filepath.Join(*cacheDir, downloadStruct.Filename)
 	logger.Debugf("Checking if %s exists at: %s", (*runtime).GetRuntimeName(), cacheFileOfNodeJs)
 	_, err = os.Stat(cacheFileOfNodeJs)
 
