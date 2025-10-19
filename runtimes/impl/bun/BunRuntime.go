@@ -7,10 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/samtv12345/gnpm/archive"
 	"github.com/samtv12345/gnpm/filemanagement"
 	http3 "github.com/samtv12345/gnpm/http"
@@ -23,6 +21,17 @@ import (
 
 type Runtime struct {
 	Logger *zap.SugaredLogger
+}
+
+func (r Runtime) GetRcFilename() string {
+	return ".bun-version"
+}
+
+func (r Runtime) GetEngine(engine *packageJson.Engines) *string {
+	if engine != nil {
+		return engine.Bun
+	}
+	return nil
 }
 
 func (r Runtime) GetVersionedFilename(version string, filename string) string {
@@ -82,83 +91,14 @@ func (r Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameS
 	return &shasums, nil
 }
 
-func (r Runtime) GetInformationFromPackageJSON(proposedVersion *string, path string, versions *[]interfaces.IRuntimeVersion) (*interfaces.IRuntimeVersion, error) {
-	var versionToDownload *string
-	packageManifest, err := packageJson.ReadPackageJson(filepath.Join(path, "package.json"))
+func (r Runtime) GetAllVersionsOfRuntime(forceDownload *bool) (*[]interfaces.IRuntimeVersion, error) {
+	cacheDir, err := filemanagement.GetCacheDir()
 	if err != nil {
 		return nil, err
 	}
-	// Check .bun-version first
-	bunvmRC, errNvmrc := packageJson.ReadRuntimeVersionFile(filepath.Join(path, ".bun-version"))
-	if errNvmrc == nil {
-		versionToDownload = &bunvmRC
-	}
-
-	// Then check the package.json "engines" field
-	if packageManifest != nil && packageManifest.Engines != nil && packageManifest.Engines.Bun != nil {
-		versionToDownload = packageManifest.Engines.Bun
-	}
-
-	if proposedVersion != nil {
-		versionToDownload = proposedVersion
-	}
-
-	if versionToDownload != nil {
-		constraints, err := semver.NewConstraint(*versionToDownload)
-		if err != nil {
-			r.Logger.Errorw("Error parsing version", "error", err)
-		}
-
-		var possibleVersions = make([]*semver.Version, 0)
-		for _, nodeVersion := range *versions {
-			v, err := semver.NewVersion(nodeVersion.GetVersion())
-			if err != nil {
-				r.Logger.Errorw("Error parsing version", "error", err, nodeVersion.GetVersion())
-				continue
-			}
-			if constraints.Check(v) {
-				possibleVersions = append(possibleVersions, v)
-			}
-		}
-
-		// Sort possibleVersions in descending order
-		sort.Sort(semver.Collection(possibleVersions))
-
-		if len(possibleVersions) > 0 {
-			latestVersion := possibleVersions[len(possibleVersions)-1].String()
-			versionToDownload = &latestVersion
-		}
-	} else {
-		// Default to the latest LTS version if no version is specified
-		for _, nodeVersion := range *versions {
-			if nodeVersion.IsLTS() != false {
-				var nodeVersion = nodeVersion.GetVersion()
-				versionToDownload = &nodeVersion
-				break
-			}
-		}
-	}
-
-	if versionToDownload == nil {
-		return nil, errors.New("error finding a suitable bun version")
-	}
-
-	for _, nodeVersion := range *versions {
-		if nodeVersion.GetVersion() == *versionToDownload || nodeVersion.GetVersion() == "v"+*versionToDownload {
-			return &nodeVersion, nil
-		}
-	}
-	return nil, errors.New("error finding a suitable Bun version")
-}
-
-func (r Runtime) GetAllVersionsOfRuntime() (*[]interfaces.IRuntimeVersion, error) {
-	dataDir, err := filemanagement.EnsureDataDir()
-	if err != nil {
-		return nil, err
-	}
-	nodeJSCacheFile := filepath.Join(*dataDir, ".cache", "bun_index.json")
+	nodeJSCacheFile := filepath.Join(*cacheDir, "bun_index.json")
 	fsInfo, err := os.Stat(nodeJSCacheFile)
-	if os.IsNotExist(err) || fsInfo.Size() == 0 {
+	if os.IsNotExist(err) || fsInfo.Size() == 0 || (forceDownload != nil && *forceDownload) {
 		nodeVersions, err := http2.GetBunVersions(r.Logger)
 		if err != nil {
 			return nil, err
