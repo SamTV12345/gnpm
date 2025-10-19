@@ -1,0 +1,10 @@
+{
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "@types/node": "^24.6.2"
+  },
+  "engines": {
+    "deno": "1.37.0"
+  },
+  "packageManager": "pnpm@10.18.3"
+}
