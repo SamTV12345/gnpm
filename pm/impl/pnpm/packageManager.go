@@ -100,6 +100,10 @@ func (p Pnpm) DownloadRelease(version string) (*http3.DownloadReleaseResult, err
 		operatingSystem = "win"
 	}
 
+	if operatingSystem == "linux" {
+		operatingSystem = "linuxstatic"
+	}
+
 	if architecture == "amd64" {
 		architecture = "x64"
 	}
