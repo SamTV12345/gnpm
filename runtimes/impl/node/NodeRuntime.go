@@ -19,6 +19,7 @@ import (
 	"github.com/samtv12345/gnpm/packageJson"
 	"github.com/samtv12345/gnpm/runtimes/impl/node/http"
 	"github.com/samtv12345/gnpm/runtimes/interfaces"
+	"github.com/samtv12345/gnpm/utils"
 	"go.uber.org/zap"
 )
 
@@ -179,13 +180,27 @@ func (n Runtime) ToDownloadUrl(filenamePrefix string, shaSumOFFiles []models.Cre
 		return nil, errors.New("error finding correct Node.js binary for your platform")
 	}
 
-	urlToNode := "https://nodejs.org/dist/" + version + "/" + filename.Filename
+	var urlToNode string
+	if utils.IsMusl() {
+		urlToNode = "https://unofficial-builds.nodejs.org/download/release/" + version + "/" + filename.Filename
+		println("Musl detected, using unofficial builds:", urlToNode)
+	} else {
+		urlToNode = "https://nodejs.org/dist/" + version + "/" + filename.Filename
+
+	}
 
 	return &urlToNode, nil
 }
 
 func (n Runtime) GetShaSumsForRuntime(version string) (*[]models.CreateFilenameStruct, error) {
-	response, err := http2.Get("https://nodejs.org/dist/" + version + "/SHASUMS256.txt")
+	var response *http2.Response
+	var err error
+	if utils.IsMusl() {
+		response, err = http2.Get("https://unofficial-builds.nodejs.org/download/release/" + version + "/SHASUMS256.txt")
+	} else {
+		response, err = http2.Get("https://nodejs.org/dist/" + version + "/SHASUMS256.txt")
+	}
+
 	if err != nil {
 		n.Logger.Error("Error fetching SHASUMS256.txt:", err)
 		return nil, err
