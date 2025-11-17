@@ -30,15 +30,15 @@ RUN chmod +x /usr/local/bin/gnpm && chown root:root /usr/local/bin/gnpm
 COPY ./exampleApps/pnpm .
 RUN /usr/local/bin/gnpm install
 
-FROM alpine:latest AS yarn
+#FROM alpine:latest AS yarn
 
-WORKDIR /root
-RUN apk add --no-cache ca-certificates
-COPY --from=builder /app/gnpmBin /usr/local/bin/gnpm
-RUN chmod +x /usr/local/bin/gnpm && chown root:root /usr/local/bin/gnpm
-
-COPY ./exampleApps/yarn .
-RUN /usr/local/bin/gnpm install
+#WORKDIR /root
+#RUN apk add --no-cache ca-certificates
+#COPY --from=builder /app/gnpmBin /usr/local/bin/gnpm
+#RUN chmod +x /usr/local/bin/gnpm && chown root:root /usr/local/bin/gnpm
+#
+#COPY ./exampleApps/yarn .
+#RUN /usr/local/bin/gnpm install
 
 #FROM ubuntu:latest AS deno
 #
