@@ -33,6 +33,8 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build dockerfile
+        run: docker build -t gnpm:latest -f Dockerfile .
       - name: Upload Snapshot Artifacts
         if: github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
