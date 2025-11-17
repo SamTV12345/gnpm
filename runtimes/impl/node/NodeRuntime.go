@@ -183,7 +183,7 @@ func (n Runtime) ToDownloadUrl(filenamePrefix string, shaSumOFFiles []models.Cre
 	var urlToNode string
 	if utils.IsMusl() {
 		urlToNode = "https://unofficial-builds.nodejs.org/download/release/" + version + "/" + filename.Filename
-		println("Musl detected, using unofficial builds:", urlToNode)
+		n.Logger.Info("Musl detected, using unofficial builds:", urlToNode)
 	} else {
 		urlToNode = "https://nodejs.org/dist/" + version + "/" + filename.Filename
 
