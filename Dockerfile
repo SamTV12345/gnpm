@@ -53,7 +53,7 @@ RUN /usr/local/bin/gnpm install
 FROM scratch
 
 COPY --from=npm / /
-COPY --from=pnpm / /
-COPY --from=yarn / /
+#COPY --from=pnpm / /
+#COPY --from=yarn / /
 #COPY --from=deno / /
 CMD ["/bin/sh"]
