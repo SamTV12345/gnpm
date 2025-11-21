@@ -12,7 +12,7 @@ RUN chmod +x /app/gnpm
 FROM alpine:latest AS npm
 
 WORKDIR /root
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates bash
 COPY --from=builder /app/gnpmBin /usr/local/bin/gnpm
 RUN chmod +x /usr/local/bin/gnpm && chown root:root /usr/local/bin/gnpm
 
