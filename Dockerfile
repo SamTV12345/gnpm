@@ -13,8 +13,8 @@ FROM alpine:latest AS npm
 
 WORKDIR /root
 RUN apk add --no-cache ca-certificates
-COPY --from=builder /app/gnpm /usr/local/bin/gnpm
-RUN chmod +x /usr/local/bin/gnpmBin && chown root:root /usr/local/bin/gnpm
+COPY --from=builder /app/gnpmBin /usr/local/bin/gnpm
+RUN chmod +x /usr/local/bin/gnpm && chown root:root /usr/local/bin/gnpm
 
 COPY ./exampleApps/npm .
 # Quick checks before executing
